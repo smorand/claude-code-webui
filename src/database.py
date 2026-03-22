@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS messages (
     role TEXT NOT NULL,
     content TEXT NOT NULL,
     created_at TEXT NOT NULL,
+    edited_at TEXT,
     FOREIGN KEY (conversation_id) REFERENCES conversations(id)
 );
 
@@ -63,12 +64,13 @@ class ConversationRow:
 class MessageRow:
     """Value object for a message record."""
 
-    __slots__ = ("content", "conversation_id", "created_at", "id", "role")
+    __slots__ = ("content", "conversation_id", "created_at", "edited_at", "id", "role")
     id: str
     conversation_id: str
     role: str
     content: str
     created_at: str
+    edited_at: str | None = None
 
 
 @dataclass(frozen=True)
@@ -210,9 +212,22 @@ class Database:
                         role=row["role"],
                         content=row["content"],
                         created_at=row["created_at"],
+                        edited_at=row["edited_at"],
                     )
                     for row in rows
                 ]
+
+    async def update_message(self, message_id: str, content: str) -> bool:
+        """Update a message's content and set edited_at. Returns True if the message existed."""
+        with trace_span("db.update_message", attributes={"message_id": message_id}):
+            now = datetime.now(UTC).isoformat()
+            async with aiosqlite.connect(self._db_path) as db:
+                cursor = await db.execute(
+                    "UPDATE messages SET content = ?, edited_at = ? WHERE id = ?",
+                    (content, now, message_id),
+                )
+                await db.commit()
+                return cursor.rowcount > 0
 
     async def add_file(
         self,

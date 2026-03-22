@@ -25,6 +25,7 @@ dependencies = [
     "websockets>=14.0",
     "aiosqlite>=0.20.0",
     "jinja2>=3.1.0",
+    "mcp>=1.2.0",
 ]
 
 [dependency-groups]
@@ -82,7 +83,7 @@ ignore = [
 "tests/*" = ["ARG", "PLR2004"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["claude_code_webui", "api", "config", "logging_config", "tracing", "services", "database", "chat", "channel", "file_upload"]
+known-first-party = ["claude_code_webui", "api", "config", "logging_config", "tracing", "services", "database", "chat", "channel", "channel_bridge", "file_upload"]
 
 [tool.ruff.format]
 quote-style = "double"

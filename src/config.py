@@ -1,5 +1,7 @@
 """Application settings using pydantic-settings."""
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -78,3 +80,19 @@ class Settings(BaseSettings):
     ]
     max_history_messages: int = 100
     database_path: str = "./data/ccwebui.db"
+
+    channel_name: str = "webui"
+    channel_state_dir: Path = Path.home() / ".claude" / "channels" / "webui"
+    channel_inbox_dir: Path | None = None
+    channel_outbox_dir: Path | None = None
+    channel_max_file_size: int = 52_428_800
+
+    @property
+    def resolved_inbox_dir(self) -> Path:
+        """Return inbox directory, defaulting to {channel_state_dir}/inbox/."""
+        return self.channel_inbox_dir or (self.channel_state_dir / "inbox")
+
+    @property
+    def resolved_outbox_dir(self) -> Path:
+        """Return outbox directory, defaulting to {channel_state_dir}/outbox/."""
+        return self.channel_outbox_dir or (self.channel_state_dir / "outbox")
