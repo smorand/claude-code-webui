@@ -43,26 +43,6 @@ async def _resolve_conversation(
     return conv.id
 
 
-async def _resolve_attachments(
-    db: Database,
-    websocket: WebSocket,
-    attachments: list[dict[str, str]],
-    message_id: str,
-) -> list[str]:
-    """Resolve file attachments: link to message and return file paths. Warns on missing files."""
-    file_paths: list[str] = []
-    for attachment in attachments:
-        file_id = attachment.get("file_id", "")
-        file_record = await db.get_file(file_id)
-        if file_record is None:
-            logger.warning("File not found: %s", file_id)
-            await websocket.send_json({"type": "warning", "detail": f"File not found: {file_id}"})
-        else:
-            file_paths.append(file_record.storage_path)
-            await db.link_file_to_message(file_id, message_id)
-    return file_paths
-
-
 def create_chat_router(db: Database, bridge: ChannelBridge) -> APIRouter:
     """Create the WebSocket chat router."""
     router = APIRouter()
@@ -83,7 +63,7 @@ def create_chat_router(db: Database, bridge: ChannelBridge) -> APIRouter:
             while True:
                 raw = await websocket.receive_text()
                 with trace_span("ws.message_received"):
-                    data, content, attachments = _parse_message(raw)
+                    data, content = _parse_message(raw)
                     if data is None:
                         await _send_error(websocket, "Invalid JSON")
                         continue
@@ -93,8 +73,8 @@ def create_chat_router(db: Database, bridge: ChannelBridge) -> APIRouter:
                         await _send_error(websocket, f"Unknown message type: {msg_type}")
                         continue
 
-                    if not content and not attachments:
-                        await _send_error(websocket, "Message content is empty and no attachments provided")
+                    if not content:
+                        await _send_error(websocket, "Message content is empty")
                         continue
 
                     resolved_id = await _resolve_conversation(
@@ -107,14 +87,11 @@ def create_chat_router(db: Database, bridge: ChannelBridge) -> APIRouter:
                     await websocket.send_json({"type": "connected", "conversation_id": conversation_id})
 
                     user_msg = await db.add_message(conversation_id, "user", content)
-                    file_paths = await _resolve_attachments(db, websocket, attachments, user_msg.id)
 
-                    first_file = file_paths[0] if file_paths else None
                     await bridge.deliver(
                         message_id=user_msg.id,
                         text=content,
                         chat_id=conversation_id,
-                        file_path=first_file,
                     )
 
         except WebSocketDisconnect:
@@ -125,12 +102,11 @@ def create_chat_router(db: Database, bridge: ChannelBridge) -> APIRouter:
     return router
 
 
-def _parse_message(raw: str) -> tuple[dict[str, Any] | None, str, list[dict[str, str]]]:
-    """Parse a raw WebSocket message. Returns (data, content, attachments) or (None, "", []) on parse error."""
+def _parse_message(raw: str) -> tuple[dict[str, Any] | None, str]:
+    """Parse a raw WebSocket message. Returns (data, content) or (None, "") on parse error."""
     try:
         data: dict[str, Any] = json.loads(raw)
     except json.JSONDecodeError:
-        return None, "", []
+        return None, ""
     content = data.get("content", "").strip()
-    attachments: list[dict[str, str]] = data.get("attachments", [])
-    return data, content, attachments
+    return data, content

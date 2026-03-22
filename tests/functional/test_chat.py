@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io
 import json
 from pathlib import Path
 
@@ -123,53 +122,21 @@ def test_websocket_chat_nonexistent_conversation(sync_client: TestClient) -> Non
         assert "not found" in error["detail"].lower()
 
 
-def test_websocket_chat_with_file_attachment(sync_client: TestClient) -> None:
-    """Message with file attachment resolves file and delivers."""
-    upload_resp = sync_client.post(
-        "/api/files/upload",
-        files=[("files", ("code.py", io.BytesIO(b"x = 1"), "text/x-python"))],
-    )
-    assert upload_resp.status_code == 201
-    file_id = upload_resp.json()["files"][0]["file_id"]
-
+def test_websocket_chat_message_without_attachments(sync_client: TestClient) -> None:
+    """Messages are sent without attachment fields (uploads are decoupled)."""
     with sync_client.websocket_connect("/ws/chat") as ws:
-        ws.send_text(
-            json.dumps(
-                {
-                    "type": "user_message",
-                    "content": "Review this file",
-                    "attachments": [{"file_id": file_id}],
-                }
-            )
-        )
+        ws.send_text(json.dumps({"type": "user_message", "content": "Review this file"}))
         connected = ws.receive_json()
         assert connected["type"] == "connected"
 
 
-def test_websocket_chat_nonexistent_file_warns(sync_client: TestClient) -> None:
-    """Non-existent file_id in attachment sends warning but continues."""
+def test_websocket_chat_unknown_type_rejected(sync_client: TestClient) -> None:
+    """Unknown message type returns error."""
     with sync_client.websocket_connect("/ws/chat") as ws:
-        ws.send_text(
-            json.dumps(
-                {
-                    "type": "user_message",
-                    "content": "Review this",
-                    "attachments": [{"file_id": "nonexistent-uuid"}],
-                }
-            )
-        )
-        messages = []
-        for _ in range(5):
-            try:
-                msg = ws.receive_json(mode="text")
-                messages.append(msg)
-                if msg["type"] == "connected":
-                    break
-            except Exception:
-                break
-
-        types_found = [m["type"] for m in messages]
-        assert "warning" in types_found or "connected" in types_found
+        ws.send_text(json.dumps({"type": "upload_file", "content": "test"}))
+        error = ws.receive_json()
+        assert error["type"] == "error"
+        assert "unknown" in error["detail"].lower()
 
 
 async def test_chat_frontend_served(async_client: AsyncClient) -> None:
