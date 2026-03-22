@@ -22,6 +22,7 @@ make check              # Full quality gate (lint, format, typecheck, security, 
 - Backend: `~/.local/bin/claude-code-webui`
 - Config: `~/.config/ccwebui/.env`
 - Database: `~/.local/share/ccwebui/ccwebui.db`
+- Logs: `~/.cache/ccwebui/logs/`
 - Uploads: `~/Downloads/`
 - Channel state: `~/.claude/channels/webui/`
 

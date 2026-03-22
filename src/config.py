@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _CONFIG_DIR = Path.home() / ".config" / "ccwebui"
 _DATA_DIR = Path.home() / ".local" / "share" / "ccwebui"
+_CACHE_DIR = Path.home() / ".cache" / "ccwebui"
 
 
 class Settings(BaseSettings):
@@ -83,6 +84,7 @@ class Settings(BaseSettings):
     ]
     max_history_messages: int = 100
     database_path: str = str(_DATA_DIR / "ccwebui.db")
+    log_dir: str = str(_CACHE_DIR / "logs")
 
     channel_name: str = "webui"
     channel_state_dir: Path = Path.home() / ".claude" / "channels" / "webui"

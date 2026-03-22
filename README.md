@@ -123,6 +123,7 @@ Configuration is loaded from `~/.config/ccwebui/.env`, then overridden by enviro
 | `CCWEBUI_ALLOWED_UPLOAD_EXTENSIONS` | (see config.py) | Allowed file extensions for upload |
 | `CCWEBUI_MAX_HISTORY_MESSAGES` | `100` | Max messages sent to Claude as context |
 | `CCWEBUI_DATABASE_PATH` | `~/.local/share/ccwebui/ccwebui.db` | SQLite database file path |
+| `CCWEBUI_LOG_DIR` | `~/.cache/ccwebui/logs` | Directory for log files |
 
 See also [Channel Configuration](#channel-configuration) above for channel specific settings.
 
@@ -134,6 +135,7 @@ See also [Channel Configuration](#channel-configuration) above for channel speci
 | `~/.local/bin/claude-code-webui` | Backend binary |
 | `~/.config/ccwebui/.env` | Configuration file |
 | `~/.local/share/ccwebui/ccwebui.db` | SQLite database |
+| `~/.cache/ccwebui/logs/` | Application and OTel logs |
 | `~/Downloads/` | Uploaded files |
 | `~/.claude/channels/webui/` | MCP channel state (inbox/outbox) |
 
@@ -181,6 +183,8 @@ make run-down
 ```
 
 ## Log Files
+
+Logs are written to `~/.cache/ccwebui/logs/`:
 
 - `claude-code-webui.log` : Application logs (also shown in console with colors)
 - `claude-code-webui-otel.log` : OpenTelemetry traces in JSONL format

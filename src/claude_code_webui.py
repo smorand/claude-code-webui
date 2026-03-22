@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -28,8 +29,10 @@ def main(
 ) -> None:
     """Claude Code Web UI: a web interface for Claude Code CLI."""
     settings = Settings()
-    setup_logging(app_name=settings.app_name, verbose=verbose, quiet=quiet)
-    configure_tracing(app_name=settings.app_name)
+    log_path = Path(settings.log_dir)
+    log_path.mkdir(parents=True, exist_ok=True)
+    setup_logging(app_name=settings.app_name, verbose=verbose, quiet=quiet, log_dir=log_path)
+    configure_tracing(app_name=settings.app_name, log_dir=log_path)
 
 
 @app.command()
@@ -64,10 +67,13 @@ def _run_channel(port: int) -> None:
     from database import Database  # noqa: PLC0415
 
     settings = Settings(port=port)
+    log_path = Path(settings.log_dir)
+    log_path.mkdir(parents=True, exist_ok=True)
 
     setup_logging(
         app_name=settings.app_name,
         verbose=settings.debug,
+        log_dir=log_path,
     )
 
     db = Database(db_path=settings.database_path)

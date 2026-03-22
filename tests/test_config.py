@@ -19,6 +19,7 @@ def test_default_settings() -> None:
     assert ".txt" in settings.allowed_upload_extensions
     assert settings.max_history_messages == 100
     assert settings.database_path.endswith("/.local/share/ccwebui/ccwebui.db")
+    assert settings.log_dir.endswith("/.cache/ccwebui/logs")
     assert settings.channel_name == "webui"
     assert settings.channel_max_file_size == 52_428_800
     assert "webui" in str(settings.channel_state_dir)
