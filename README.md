@@ -7,10 +7,24 @@ A web interface for interacting with Claude Code CLI. Features an MCP channel se
 - Python 3.13 or later
 - uv (package manager)
 
+## Installation
+
+```bash
+# Install to ~/.local/bin with config in ~/.config/ccwebui
+make install
+```
+
+This creates:
+- `~/.local/bin/claude-code-webui` : Binary
+- `~/.config/ccwebui/.env` : Configuration file
+- `~/.local/share/ccwebui/` : Database and application data
+
+Ensure `~/.local/bin` is in your `PATH`.
+
 ## Quick Start
 
 ```bash
-# Install dependencies
+# Install dependencies (development)
 make sync
 
 # Start the web UI server (standalone, no Claude Code integration)
@@ -75,7 +89,9 @@ make run ARGS='channel --port 9090'
 
 | Command | Description |
 |---------|-------------|
-| `make sync` | Install dependencies |
+| `make install` | Install binary to ~/.local/bin with config |
+| `make uninstall` | Remove binary (preserves config and data) |
+| `make sync` | Install dependencies (development) |
 | `make run` | Run the CLI application |
 | `make run ARGS='serve'` | Start the web UI server (standalone) |
 | `make run ARGS='channel'` | Start the MCP channel server |
@@ -90,7 +106,7 @@ make run ARGS='channel --port 9090'
 
 ## Configuration
 
-Configuration is done via environment variables with the `CCWEBUI_` prefix:
+Configuration is loaded from `~/.config/ccwebui/.env`, then overridden by environment variables with the `CCWEBUI_` prefix.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -98,15 +114,22 @@ Configuration is done via environment variables with the `CCWEBUI_` prefix:
 | `CCWEBUI_DEBUG` | `false` | Enable debug mode |
 | `CCWEBUI_HOST` | `0.0.0.0` | Host to bind to |
 | `CCWEBUI_PORT` | `8080` | Port to bind to |
-| `CCWEBUI_UPLOAD_DIR` | `<project>/uploads` | Directory for uploaded files (absolute path) |
+| `CCWEBUI_UPLOAD_DIR` | `~/Downloads` | Directory for uploaded files |
 | `CCWEBUI_MAX_UPLOAD_SIZE_MB` | `10` | Maximum upload file size in MB |
 | `CCWEBUI_ALLOWED_UPLOAD_EXTENSIONS` | (see config.py) | Allowed file extensions for upload |
 | `CCWEBUI_MAX_HISTORY_MESSAGES` | `100` | Max messages sent to Claude as context |
-| `CCWEBUI_DATABASE_PATH` | `<project>/data/ccwebui.db` | SQLite database file path (absolute path) |
+| `CCWEBUI_DATABASE_PATH` | `~/.local/share/ccwebui/ccwebui.db` | SQLite database file path |
 
 See also [Channel Configuration](#channel-configuration) above for channel specific settings.
 
-You can also create a `.env` file in the project root.
+### File Locations
+
+| Path | Purpose |
+|------|---------|
+| `~/.config/ccwebui/.env` | Configuration file |
+| `~/.local/share/ccwebui/ccwebui.db` | SQLite database |
+| `~/Downloads/` | Uploaded files |
+| `~/.claude/channels/webui/` | MCP channel state (inbox/outbox) |
 
 ## Project Structure
 

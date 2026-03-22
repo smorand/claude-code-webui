@@ -9,13 +9,19 @@ Web interface for interacting with Claude Code CLI. Features MCP channel server 
 ## Key Commands
 
 ```bash
-make sync               # Install dependencies
-make run                # Run the CLI (serve command starts the web server)
+make install            # Install binary to ~/.local/bin with config dirs
+make sync               # Install dependencies (development)
 make run ARGS='serve'   # Start the web UI server
 make run ARGS='channel' # Start the MCP channel server (for manual testing)
 make check              # Full quality gate (lint, format, typecheck, security, tests+coverage)
-make docker-build       # Build Docker image
 ```
+
+## File Locations
+
+- Config: `~/.config/ccwebui/.env`
+- Database: `~/.local/share/ccwebui/ccwebui.db`
+- Uploads: `~/Downloads/`
+- Channel state: `~/.claude/channels/webui/`
 
 ## Project Structure
 

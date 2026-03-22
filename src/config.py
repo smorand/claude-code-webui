@@ -4,17 +4,20 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_CONFIG_DIR = Path.home() / ".config" / "ccwebui"
+_DATA_DIR = Path.home() / ".local" / "share" / "ccwebui"
+
 
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables.
 
-    Environment variables are prefixed with CCWEBUI_ (e.g., CCWEBUI_APP_NAME).
-    A .env file is loaded automatically if present.
+    Configuration is loaded in order: defaults, config file (~/.config/ccwebui/.env),
+    then environment variables (CCWEBUI_ prefix). Environment variables take precedence.
     """
 
     model_config = SettingsConfigDict(
         env_prefix="CCWEBUI_",
-        env_file=".env",
+        env_file=str(_CONFIG_DIR / ".env"),
         env_file_encoding="utf-8",
     )
 
@@ -23,7 +26,7 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"  # nosec B104
     port: int = 8080
 
-    upload_dir: str = str(Path(__file__).resolve().parent.parent / "uploads")
+    upload_dir: str = str(Path.home() / "Downloads")
     max_upload_size_mb: int = 10
     allowed_upload_extensions: list[str] = [
         ".txt",
@@ -79,7 +82,7 @@ class Settings(BaseSettings):
         ".makefile",
     ]
     max_history_messages: int = 100
-    database_path: str = str(Path(__file__).resolve().parent.parent / "data" / "ccwebui.db")
+    database_path: str = str(_DATA_DIR / "ccwebui.db")
 
     channel_name: str = "webui"
     channel_state_dir: Path = Path.home() / ".claude" / "channels" / "webui"

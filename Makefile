@@ -149,17 +149,41 @@ build: sync
 	@uv build
 	@echo "Build complete! Artifacts in dist/"
 
-## install: Install as a uv tool (available system-wide)
+## install: Install binary to ~/.local/bin and create config/data directories
 install:
-	@echo "Installing $(PROJECT_NAME) as uv tool..."
+	@echo "Installing $(PROJECT_NAME)..."
+	@mkdir -p ~/.local/bin
+	@mkdir -p ~/.config/ccwebui
+	@mkdir -p ~/.local/share/ccwebui
 	@uv tool install . --force
-	@echo "Install complete! Run '$(PROJECT_NAME)' from anywhere."
+	@ln -sf $$(uv tool dir)/$(PROJECT_NAME)/bin/$(PROJECT_NAME) ~/.local/bin/$(PROJECT_NAME)
+	@if [ ! -f ~/.config/ccwebui/.env ]; then \
+		echo "# Claude Code Web UI configuration" > ~/.config/ccwebui/.env; \
+		echo "# Override defaults with CCWEBUI_ prefixed variables" >> ~/.config/ccwebui/.env; \
+		echo "# CCWEBUI_PORT=8080" >> ~/.config/ccwebui/.env; \
+		echo "# CCWEBUI_DEBUG=false" >> ~/.config/ccwebui/.env; \
+		echo "# CCWEBUI_UPLOAD_DIR=~/Downloads" >> ~/.config/ccwebui/.env; \
+		echo "# CCWEBUI_DATABASE_PATH=~/.local/share/ccwebui/ccwebui.db" >> ~/.config/ccwebui/.env; \
+		echo "Created config: ~/.config/ccwebui/.env"; \
+	fi
+	@echo ""
+	@echo "Install complete!"
+	@echo "  Binary:  ~/.local/bin/$(PROJECT_NAME)"
+	@echo "  Config:  ~/.config/ccwebui/.env"
+	@echo "  Data:    ~/.local/share/ccwebui/"
+	@echo "  Uploads: ~/Downloads/"
+	@echo ""
+	@echo "Ensure ~/.local/bin is in your PATH."
 
-## uninstall: Remove uv tool
+## uninstall: Remove binary, uv tool, and optionally data
 uninstall:
 	@echo "Uninstalling $(PROJECT_NAME)..."
-	@uv tool uninstall $(PROJECT_NAME) 2>/dev/null || echo "Not installed"
+	@rm -f ~/.local/bin/$(PROJECT_NAME)
+	@uv tool uninstall $(PROJECT_NAME) 2>/dev/null || echo "Not installed as uv tool"
 	@echo "Uninstall complete!"
+	@echo "  Config preserved: ~/.config/ccwebui/"
+	@echo "  Data preserved:   ~/.local/share/ccwebui/"
+	@echo "  To remove all data: rm -rf ~/.config/ccwebui ~/.local/share/ccwebui"
 
 # ============================================================================
 # CLEANUP
