@@ -294,6 +294,32 @@
                     conversationId = data.conversation_id;
                     break;
 
+                case 'msg':
+                    if (data.from === 'assistant') {
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = 'message assistant';
+                        msgDiv.setAttribute('data-msg-id', data.id);
+                        msgDiv.innerHTML = marked.parse(data.text || '');
+                        if (data.file) {
+                            const fileLink = document.createElement('div');
+                            fileLink.className = 'attachments';
+                            fileLink.innerHTML = `<a class="file-badge" href="${data.file.url}" target="_blank">${data.file.name}</a>`;
+                            msgDiv.appendChild(fileLink);
+                        }
+                        container.appendChild(msgDiv);
+                        setWaiting(false);
+                        scrollToBottom();
+                    }
+                    break;
+
+                case 'edit':
+                    const editTarget = container.querySelector(`[data-msg-id="${data.id}"]`);
+                    if (editTarget) {
+                        editTarget.innerHTML = marked.parse(data.text || '');
+                        scrollToBottom();
+                    }
+                    break;
+
                 case 'assistant_chunk':
                     if (!streamingDiv) {
                         streamingDiv = document.createElement('div');

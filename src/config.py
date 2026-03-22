@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"  # nosec B104
     port: int = 8080
 
-    upload_dir: str = "./uploads"
+    upload_dir: str = str(Path(__file__).resolve().parent.parent / "uploads")
     max_upload_size_mb: int = 10
     allowed_upload_extensions: list[str] = [
         ".txt",
@@ -79,7 +79,7 @@ class Settings(BaseSettings):
         ".makefile",
     ]
     max_history_messages: int = 100
-    database_path: str = "./data/ccwebui.db"
+    database_path: str = str(Path(__file__).resolve().parent.parent / "data" / "ccwebui.db")
 
     channel_name: str = "webui"
     channel_state_dir: Path = Path.home() / ".claude" / "channels" / "webui"

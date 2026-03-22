@@ -12,13 +12,15 @@ def test_default_settings() -> None:
     assert settings.debug is False
     assert settings.host == "0.0.0.0"
     assert settings.port == 8080
-    assert settings.upload_dir == "./uploads"
+    assert settings.upload_dir.endswith("/uploads")
+    assert "/src/" not in settings.upload_dir
     assert settings.max_upload_size_mb == 10
     assert isinstance(settings.allowed_upload_extensions, list)
     assert ".py" in settings.allowed_upload_extensions
     assert ".txt" in settings.allowed_upload_extensions
     assert settings.max_history_messages == 100
-    assert settings.database_path == "./data/ccwebui.db"
+    assert settings.database_path.endswith("/data/ccwebui.db")
+    assert "/src/" not in settings.database_path
     assert settings.channel_name == "webui"
     assert settings.channel_max_file_size == 52_428_800
     assert "webui" in str(settings.channel_state_dir)

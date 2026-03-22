@@ -76,6 +76,7 @@ def create_chat_router(db: Database, bridge: ChannelBridge) -> APIRouter:
         through the channel bridge to Claude.
         """
         await websocket.accept()
+        bridge.add_client(websocket)
         conversation_id: str | None = None
 
         try:
@@ -118,6 +119,8 @@ def create_chat_router(db: Database, bridge: ChannelBridge) -> APIRouter:
 
         except WebSocketDisconnect:
             logger.info("WebSocket disconnected for conversation %s", conversation_id)
+        finally:
+            bridge.remove_client(websocket)
 
     return router
 

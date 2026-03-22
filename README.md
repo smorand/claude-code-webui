@@ -98,11 +98,11 @@ Configuration is done via environment variables with the `CCWEBUI_` prefix:
 | `CCWEBUI_DEBUG` | `false` | Enable debug mode |
 | `CCWEBUI_HOST` | `0.0.0.0` | Host to bind to |
 | `CCWEBUI_PORT` | `8080` | Port to bind to |
-| `CCWEBUI_UPLOAD_DIR` | `./uploads` | Directory for uploaded files |
+| `CCWEBUI_UPLOAD_DIR` | `<project>/uploads` | Directory for uploaded files (absolute path) |
 | `CCWEBUI_MAX_UPLOAD_SIZE_MB` | `10` | Maximum upload file size in MB |
 | `CCWEBUI_ALLOWED_UPLOAD_EXTENSIONS` | (see config.py) | Allowed file extensions for upload |
 | `CCWEBUI_MAX_HISTORY_MESSAGES` | `100` | Max messages sent to Claude as context |
-| `CCWEBUI_DATABASE_PATH` | `./data/ccwebui.db` | SQLite database file path |
+| `CCWEBUI_DATABASE_PATH` | `<project>/data/ccwebui.db` | SQLite database file path (absolute path) |
 
 See also [Channel Configuration](#channel-configuration) above for channel specific settings.
 
