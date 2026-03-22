@@ -529,6 +529,34 @@
             container.scrollTop = container.scrollHeight;
         }
 
+        /* ---- Clipboard paste (text = default, image = upload as screenshot) ---- */
+
+        function handlePaste(e) {
+            const items = e.clipboardData && e.clipboardData.items;
+            if (!items) return;
+
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault();
+                    const blob = item.getAsFile();
+                    if (!blob) return;
+                    const now = new Date();
+                    const pad = (n, len) => String(n).padStart(len, '0');
+                    const ts = pad(now.getFullYear(), 4)
+                        + pad(now.getMonth() + 1, 2)
+                        + pad(now.getDate(), 2)
+                        + pad(now.getHours(), 2)
+                        + pad(now.getMinutes(), 2)
+                        + pad(now.getSeconds(), 2)
+                        + '.' + pad(now.getMilliseconds(), 3);
+                    const filename = 'screenshot_' + ts + '.png';
+                    const file = new File([blob], filename, { type: 'image/png' });
+                    uploadFile(file);
+                    return;
+                }
+            }
+        }
+
         // Auto-resize textarea
         document.addEventListener('DOMContentLoaded', function() {
             const textarea = document.getElementById('message-input');
@@ -536,6 +564,7 @@
                 this.style.height = 'auto';
                 this.style.height = Math.min(this.scrollHeight, 150) + 'px';
             });
+            textarea.addEventListener('paste', handlePaste);
 
             connectWebSocket();
         });
