@@ -6,7 +6,7 @@
 - [x] **File Upload**: Allow users to upload files to the server from the web interface (see `specs/2026-03-22_20:34:04-web-chat-and-file-upload.md`)
 - [x] **MCP Server Integration**: Implement an MCP (Model Context Protocol) server to communicate with Claude (see `specs/2026-03-22_20:35:31-mcp-channel-integration.md`)
 - [x] **Claude Code Channel Protocol**: Follow the Claude Code channel protocol (plugin:fakechat@claude-plugins-official) for proper plugin communication (see `specs/2026-03-22_20:35:31-mcp-channel-integration.md`)
-- [ ] **OAuth2 Authentication (GCP)**: Implement OAuth2 via Google Cloud Platform for authenticating users on the server
+- [x] **OAuth2 Authentication (GCP)**: Implement OAuth2 via Google Cloud Platform for authenticating users on the server (see `specs/2026-03-22_20:34:05-add-oauth2-gcp.md`)
 
 ## Deferred from Specs
 
