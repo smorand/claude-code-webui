@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException, UploadFile
 
 from tracing import trace_span
 
@@ -42,7 +42,7 @@ def create_file_upload_router(settings: Settings, db: Database) -> APIRouter:
 
     @router.post("/upload", status_code=201)
     async def upload_files(
-        files: list[UploadFile] = Depends(),
+        files: list[UploadFile],
     ) -> dict[str, list[dict[str, str | int]]]:
         """Upload one or more files."""
         results: list[dict[str, str | int]] = []

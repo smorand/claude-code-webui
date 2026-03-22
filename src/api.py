@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from starlette.requests import Request  # noqa: TC002 -- needed at runtime for FastAPI annotation resolution
 
 from channel import StubChannel
 from chat import create_chat_router
@@ -22,8 +23,6 @@ from tracing import configure_tracing
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
-
-    from starlette.requests import Request
 
 logger = logging.getLogger(__name__)
 
