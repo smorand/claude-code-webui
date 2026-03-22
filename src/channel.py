@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any
 import mcp.server.stdio
 from mcp import types
 from mcp.server.lowlevel import NotificationOptions, Server
-from mcp.server.models import InitializationOptions
 from mcp.shared.message import SessionMessage as McpSessionMessage
 
 from tracing import trace_span
@@ -30,10 +29,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _INSTRUCTIONS = (
-    "This is the webui channel. Users send messages from a browser."
-    " To reply, call the `reply` tool with the text of your response."
-    " Always pass the `chat_id` from the <channel> tag attributes."
-    " To edit a previous message, call the `edit_message` tool with the message_id and new text."
+    "The sender reads the webui chat, not this session."
+    " Anything you want them to see must go through the reply tool;"
+    " your transcript output never reaches the UI.\n\n"
+    "Messages from the web UI arrive as"
+    ' <channel source="webui" chat_id="web" message_id="...">.'
+    " If the tag has a file_path attribute, Read that file;"
+    " it is an upload from the UI."
+    " Reply with the reply tool."
+    " To edit a previous message, call the edit_message tool"
+    " with the message_id and new text."
 )
 
 
@@ -185,13 +190,9 @@ async def run_channel_server(
     server = create_mcp_server(name=settings.channel_name)
     register_handlers(server, bridge, settings)
 
-    init_options = InitializationOptions(
-        server_name=settings.channel_name,
-        server_version="0.1.0",
-        capabilities=server.get_capabilities(
-            notification_options=NotificationOptions(),
-            experimental_capabilities={"claude/channel": {}},
-        ),
+    init_options = server.create_initialization_options(
+        notification_options=NotificationOptions(),
+        experimental_capabilities={"claude/channel": {}},
     )
 
     async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
