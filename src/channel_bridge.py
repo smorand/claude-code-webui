@@ -69,6 +69,7 @@ class ChannelBridge:
     async def broadcast(self, message: dict[str, Any]) -> None:
         """Send a JSON message to all connected WebSocket clients."""
         payload = json.dumps(message)
+        logger.info("Broadcasting to %d clients: type=%s", len(self._clients), message.get("type"))
         disconnected: list[WebSocket] = []
         for client in self._clients:
             try:

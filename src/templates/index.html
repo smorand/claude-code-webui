@@ -271,6 +271,7 @@
 
             ws.onmessage = function(event) {
                 const data = JSON.parse(event.data);
+                console.log('[WS recv]', data.type, data);
                 handleServerMessage(data);
             };
 

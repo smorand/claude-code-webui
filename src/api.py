@@ -132,12 +132,14 @@ def create_app(
     """
     settings = settings or Settings()
 
-    setup_logging(app_name=settings.app_name, verbose=settings.debug)
-    provider = configure_tracing(app_name=settings.app_name)
-
-    db = Database(db_path=settings.database_path)
-
-    if bridge is None:
+    # Only configure logging/tracing in standalone mode (no bridge = standalone)
+    if bridge is not None:
+        db = Database(db_path=settings.database_path)
+        provider = configure_tracing(app_name=settings.app_name)
+    else:
+        setup_logging(app_name=settings.app_name, verbose=settings.debug)
+        provider = configure_tracing(app_name=settings.app_name)
+        db = Database(db_path=settings.database_path)
         bridge = ChannelBridge(db=db, channel_name=settings.channel_name)
 
     templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))

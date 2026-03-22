@@ -92,6 +92,7 @@ def register_handlers(
 
     @server.call_tool()  # type: ignore[untyped-decorator]
     async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[types.TextContent]:
+        logger.info("MCP tool called: %s with args: %s", name, list(arguments.keys()))
         if name == "reply":
             return await _handle_reply(bridge, settings, arguments)
         if name == "edit_message":
