@@ -2,9 +2,9 @@
 
 ## Overview
 
-Web interface for interacting with Claude Code CLI.
+Web interface for interacting with Claude Code CLI. Features chat UI (htmx + WebSocket), file upload, and SQLite conversation persistence.
 
-**Tech Stack:** Python 3.13, FastAPI, Typer, Ruff, mypy, pytest, OpenTelemetry, pydantic-settings
+**Tech Stack:** Python 3.13, FastAPI, Typer, Ruff, mypy, pytest, OpenTelemetry, pydantic-settings, aiosqlite, htmx, Jinja2
 
 ## Key Commands
 
@@ -19,12 +19,18 @@ make docker-build       # Build Docker image
 ## Project Structure
 
 - `src/claude_code_webui.py` : CLI entry point (Typer app with serve command)
-- `src/api.py` : FastAPI server with OTel instrumentation
+- `src/api.py` : FastAPI server with OTel, routes, lifespan (DB init, upload dir)
 - `src/config.py` : Settings via pydantic-settings (CCWEBUI_ prefix)
+- `src/database.py` : SQLite database layer (aiosqlite, WAL mode, repository pattern)
+- `src/chat.py` : WebSocket chat handler (/ws/chat)
+- `src/channel.py` : MCP channel protocol and stub implementation
+- `src/file_upload.py` : File upload endpoint (POST /api/files/upload)
 - `src/logging_config.py` : Logging setup with rich + file output
 - `src/tracing.py` : OpenTelemetry tracing with JSONL export
+- `src/templates/index.html` : Chat frontend (htmx + Jinja2)
+- `src/templates/partials/` : htmx partial templates
 - `tests/` : Unit tests
-- `tests/functional/` : Integration tests (API)
+- `tests/functional/` : Integration tests (API, WebSocket, file upload)
 
 ## Conventions
 
@@ -34,6 +40,8 @@ make docker-build       # Build Docker image
 - All async operations use asyncio patterns
 - Logging with `%` formatting, not f-strings
 - OTel traces to `<app>-otel.log`, app logs to `<app>.log`
+- WebSocket handlers in `chat.py`, file operations in `file_upload.py`, database access in `database.py`
+- Frontend uses htmx templates in `src/templates/`. No inline SQL outside `database.py`
 
 ## Process
 

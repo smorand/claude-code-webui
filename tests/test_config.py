@@ -12,12 +12,27 @@ def test_default_settings() -> None:
     assert settings.debug is False
     assert settings.host == "0.0.0.0"
     assert settings.port == 8080
+    assert settings.upload_dir == "./uploads"
+    assert settings.max_upload_size_mb == 10
+    assert isinstance(settings.allowed_upload_extensions, list)
+    assert ".py" in settings.allowed_upload_extensions
+    assert ".txt" in settings.allowed_upload_extensions
+    assert settings.max_history_messages == 100
+    assert settings.database_path == "./data/ccwebui.db"
 
 
 def test_settings_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that settings can be overridden via environment variables."""
     monkeypatch.setenv("CCWEBUI_APP_NAME", "test_app")
     monkeypatch.setenv("CCWEBUI_DEBUG", "true")
+    monkeypatch.setenv("CCWEBUI_UPLOAD_DIR", "/tmp/test_uploads")
+    monkeypatch.setenv("CCWEBUI_MAX_UPLOAD_SIZE_MB", "25")
+    monkeypatch.setenv("CCWEBUI_DATABASE_PATH", "/tmp/test.db")
+    monkeypatch.setenv("CCWEBUI_MAX_HISTORY_MESSAGES", "50")
     settings = Settings()
     assert settings.app_name == "test_app"
     assert settings.debug is True
+    assert settings.upload_dir == "/tmp/test_uploads"
+    assert settings.max_upload_size_mb == 25
+    assert settings.database_path == "/tmp/test.db"
+    assert settings.max_history_messages == 50

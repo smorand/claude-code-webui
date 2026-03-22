@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Web UI</title>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-ws@2.0.3/ws.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-input: #0f3460;
+            --text-primary: #e8e8e8;
+            --text-secondary: #a0a0b0;
+            --accent: #e94560;
+            --accent-hover: #ff6b81;
+            --user-msg-bg: #0f3460;
+            --assistant-msg-bg: #1a1a3e;
+            --border-color: #2a2a4a;
+            --chip-bg: #2a2a4a;
+            --success: #4caf50;
+            --warning: #ff9800;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--bg-secondary);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        header h1 { font-size: 1.2rem; font-weight: 600; }
+
+        #new-conversation-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        #new-conversation-btn:hover { background: var(--accent-hover); }
+
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--user-msg-bg);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: var(--assistant-msg-bg);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.assistant pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        .message.assistant code {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.9em;
+        }
+
+        .message.assistant p { margin-bottom: 8px; }
+        .message.assistant p:last-child { margin-bottom: 0; }
+
+        .message .attachments {
+            margin-top: 8px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .file-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--chip-bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        #input-area {
+            background: var(--bg-secondary);
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        #attachment-chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        #attachment-chips:empty { display: none; }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--chip-bg);
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+        }
+
+        .chip .remove-chip {
+            cursor: pointer;
+            color: var(--accent);
+            font-weight: bold;
+            border: none;
+            background: none;
+            padding: 0;
+            font-size: 0.9rem;
+        }
+
+        #input-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        #file-upload-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            flex-shrink: 0;
+        }
+
+        #file-upload-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+
+        #file-input { display: none; }
+
+        #message-input {
+            flex: 1;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: none;
+            min-height: 42px;
+            max-height: 150px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #message-input:focus { border-color: var(--accent); }
+
+        #send-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        #send-btn:hover { background: var(--accent-hover); }
+        #send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #upload-progress {
+            margin-top: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        #upload-progress:empty { display: none; }
+
+        .typing-indicator {
+            align-self: flex-start;
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 8px 16px;
+        }
+
+        @media (max-width: 768px) {
+            .message { max-width: 90%; }
+            #chat-container { padding: 12px; }
+            #input-area { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Claude Code Web UI</h1>
+        <button id="new-conversation-btn" onclick="startNewConversation()">New Conversation</button>
+    </header>
+
+    <div id="chat-container"></div>
+
+    <div id="input-area">
+        <div id="attachment-chips"></div>
+        <div id="input-row">
+            <button id="file-upload-btn" onclick="document.getElementById('file-input').click()" title="Attach file">
+                &#128206;
+            </button>
+            <input type="file" id="file-input" multiple onchange="handleFileUpload(this)" />
+            <textarea id="message-input"
+                      placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
+                      rows="1"
+                      onkeydown="handleKeyDown(event)"></textarea>
+            <button id="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+        <div id="upload-progress"></div>
+    </div>
+
+    <script>
+        let conversationId = null;
+        let ws = null;
+        let isWaiting = false;
+        let attachedFiles = [];
+        let streamingDiv = null;
+        let streamingContent = '';
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws/chat`);
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleServerMessage(data);
+            };
+
+            ws.onclose = function() {
+                setTimeout(connectWebSocket, 2000);
+            };
+
+            ws.onerror = function(err) {
+                console.error('WebSocket error:', err);
+            };
+        }
+
+        function handleServerMessage(data) {
+            const container = document.getElementById('chat-container');
+
+            switch(data.type) {
+                case 'connected':
+                    conversationId = data.conversation_id;
+                    break;
+
+                case 'assistant_chunk':
+                    if (!streamingDiv) {
+                        streamingDiv = document.createElement('div');
+                        streamingDiv.className = 'message assistant';
+                        container.appendChild(streamingDiv);
+                        streamingContent = '';
+                    }
+                    streamingContent += data.content;
+                    streamingDiv.innerHTML = marked.parse(streamingContent);
+                    scrollToBottom();
+                    break;
+
+                case 'assistant_complete':
+                    if (streamingDiv) {
+                        streamingDiv.innerHTML = marked.parse(data.content);
+                    }
+                    streamingDiv = null;
+                    streamingContent = '';
+                    setWaiting(false);
+                    scrollToBottom();
+                    break;
+
+                case 'error':
+                    appendSystemMessage('Error: ' + data.detail);
+                    setWaiting(false);
+                    break;
+
+                case 'warning':
+                    appendSystemMessage('Warning: ' + data.detail);
+                    break;
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+            if (!content && attachedFiles.length === 0) return;
+            if (isWaiting) return;
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+            appendUserMessage(content, attachedFiles);
+
+            const msg = {
+                type: 'user_message',
+                content: content,
+                conversation_id: conversationId,
+                attachments: attachedFiles.map(f => ({ file_id: f.file_id }))
+            };
+
+            ws.send(JSON.stringify(msg));
+            input.value = '';
+            input.style.height = 'auto';
+            attachedFiles = [];
+            document.getElementById('attachment-chips').innerHTML = '';
+            setWaiting(true);
+        }
+
+        function appendUserMessage(content, files) {
+            const container = document.getElementById('chat-container');
+            const div = document.createElement('div');
+            div.className = 'message user';
+            div.textContent = content;
+
+            if (files.length > 0) {
+                const attachmentsDiv = document.createElement('div');
+                attachmentsDiv.className = 'attachments';
+                files.forEach(f => {
+                    const badge = document.createElement('span');
+                    badge.className = 'file-badge';
+                    badge.textContent = f.filename;
+                    attachmentsDiv.appendChild(badge);
+                });
+                div.appendChild(attachmentsDiv);
+            }
+
+            container.appendChild(div);
+            scrollToBottom();
+        }
+
+        function appendSystemMessage(text) {
+            const container = document.getElementById('chat-container');
+            const div = document.createElement('div');
+            div.className = 'message assistant';
+            div.style.color = 'var(--warning)';
+            div.textContent = text;
+            container.appendChild(div);
+            scrollToBottom();
+        }
+
+        function setWaiting(waiting) {
+            isWaiting = waiting;
+            document.getElementById('send-btn').disabled = waiting;
+            document.getElementById('message-input').disabled = waiting;
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function handleFileUpload(input) {
+            const files = input.files;
+            if (!files || files.length === 0) return;
+
+            const progress = document.getElementById('upload-progress');
+            progress.textContent = 'Uploading...';
+
+            const formData = new FormData();
+            for (const file of files) {
+                formData.append('files', file);
+            }
+
+            try {
+                const response = await fetch('/api/files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    progress.textContent = 'Upload failed: ' + (err.detail || 'Unknown error');
+                    return;
+                }
+
+                const result = await response.json();
+                const chips = document.getElementById('attachment-chips');
+
+                result.files.forEach(f => {
+                    attachedFiles.push({ file_id: f.file_id, filename: f.filename });
+
+                    const chip = document.createElement('span');
+                    chip.className = 'chip';
+                    chip.setAttribute('data-file-id', f.file_id);
+                    chip.innerHTML = `${f.filename} <button class="remove-chip" onclick="removeAttachment('${f.file_id}', this)">&times;</button>`;
+                    chips.appendChild(chip);
+                });
+
+                progress.textContent = '';
+            } catch (err) {
+                progress.textContent = 'Upload failed: ' + err.message;
+            }
+
+            input.value = '';
+        }
+
+        function removeAttachment(fileId, btn) {
+            attachedFiles = attachedFiles.filter(f => f.file_id !== fileId);
+            btn.parentElement.remove();
+        }
+
+        function startNewConversation() {
+            conversationId = null;
+            document.getElementById('chat-container').innerHTML = '';
+            attachedFiles = [];
+            document.getElementById('attachment-chips').innerHTML = '';
+            streamingDiv = null;
+            streamingContent = '';
+            setWaiting(false);
+
+            if (ws) ws.close();
+            connectWebSocket();
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chat-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Auto-resize textarea
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('message-input');
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+            });
+
+            connectWebSocket();
+        });
+    </script>
+</body>
+</html>
