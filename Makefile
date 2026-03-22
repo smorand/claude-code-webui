@@ -149,7 +149,7 @@ build: sync
 	@uv build
 	@echo "Build complete! Artifacts in dist/"
 
-## install: Install binary to ~/.local/bin and create config/data directories
+## install: Install binaries to ~/.local/bin and create config/data directories
 install:
 	@echo "Installing $(PROJECT_NAME)..."
 	@mkdir -p ~/.local/bin
@@ -157,6 +157,8 @@ install:
 	@mkdir -p ~/.local/share/ccwebui
 	@uv tool install . --force
 	@ln -sf $$(uv tool dir)/$(PROJECT_NAME)/bin/$(PROJECT_NAME) ~/.local/bin/$(PROJECT_NAME)
+	@cp bin/claude-webui ~/.local/bin/claude-webui
+	@chmod +x ~/.local/bin/claude-webui
 	@if [ ! -f ~/.config/ccwebui/.env ]; then \
 		echo "# Claude Code Web UI configuration" > ~/.config/ccwebui/.env; \
 		echo "# Override defaults with CCWEBUI_ prefixed variables" >> ~/.config/ccwebui/.env; \
@@ -166,27 +168,25 @@ install:
 		echo "# CCWEBUI_DATABASE_PATH=~/.local/share/ccwebui/ccwebui.db" >> ~/.config/ccwebui/.env; \
 		echo "Created config: ~/.config/ccwebui/.env"; \
 	fi
-	@printf '{\n  "mcpServers": {\n    "webui": {\n      "type": "stdio",\n      "command": "%s",\n      "args": ["channel"]\n    }\n  }\n}\n' \
-		"$$(which $(PROJECT_NAME) 2>/dev/null || echo "$$HOME/.local/bin/$(PROJECT_NAME)")" \
-		> ~/.config/ccwebui/mcp.json
-	@echo "Created MCP config: ~/.config/ccwebui/mcp.json"
 	@echo ""
 	@echo "Install complete!"
-	@echo "  Binary:  ~/.local/bin/$(PROJECT_NAME)"
-	@echo "  Config:  ~/.config/ccwebui/.env"
-	@echo "  MCP:     ~/.config/ccwebui/mcp.json"
-	@echo "  Data:    ~/.local/share/ccwebui/"
-	@echo "  Uploads: ~/Downloads/"
+	@echo "  Binaries: ~/.local/bin/$(PROJECT_NAME)"
+	@echo "            ~/.local/bin/claude-webui"
+	@echo "  Config:   ~/.config/ccwebui/.env"
+	@echo "  Data:     ~/.local/share/ccwebui/"
+	@echo "  Uploads:  ~/Downloads/"
 	@echo ""
 	@echo "Usage:"
-	@echo "  claude --mcp-config ~/.config/ccwebui/mcp.json"
+	@echo "  claude-webui              # Start Claude with web UI (auto port 8080..8089)"
+	@echo "  claude-webui --resume     # Resume with additional Claude flags"
 	@echo ""
 	@echo "Ensure ~/.local/bin is in your PATH."
 
-## uninstall: Remove binary, uv tool, and optionally data
+## uninstall: Remove binaries, uv tool, and optionally data
 uninstall:
 	@echo "Uninstalling $(PROJECT_NAME)..."
 	@rm -f ~/.local/bin/$(PROJECT_NAME)
+	@rm -f ~/.local/bin/claude-webui
 	@uv tool uninstall $(PROJECT_NAME) 2>/dev/null || echo "Not installed as uv tool"
 	@echo "Uninstall complete!"
 	@echo "  Config preserved: ~/.config/ccwebui/"

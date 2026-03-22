@@ -18,6 +18,8 @@ make check              # Full quality gate (lint, format, typecheck, security, 
 
 ## File Locations
 
+- Launcher: `~/.local/bin/claude-webui` (from `bin/claude-webui`)
+- Backend: `~/.local/bin/claude-code-webui`
 - Config: `~/.config/ccwebui/.env`
 - Database: `~/.local/share/ccwebui/ccwebui.db`
 - Uploads: `~/Downloads/`

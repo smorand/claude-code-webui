@@ -15,9 +15,9 @@ make install
 ```
 
 This creates:
-- `~/.local/bin/claude-code-webui` : Binary
+- `~/.local/bin/claude-code-webui` : Backend binary
+- `~/.local/bin/claude-webui` : Launcher script (auto port, inline MCP config)
 - `~/.config/ccwebui/.env` : Configuration file
-- `~/.config/ccwebui/mcp.json` : MCP server config for Claude Code
 - `~/.local/share/ccwebui/` : Database and application data
 
 Ensure `~/.local/bin` is in your `PATH`.
@@ -53,8 +53,11 @@ The MCP channel is the **sole communication path** between the web UI and Claude
 ### Usage with Claude Code
 
 ```bash
-# After make install, start Claude with the MCP config
-claude --mcp-config ~/.config/ccwebui/mcp.json
+# Start Claude with web UI (finds available port in 8080..8089)
+claude-webui
+
+# Pass additional Claude flags
+claude-webui --resume
 ```
 
 ### Manual Testing
@@ -90,8 +93,8 @@ make run ARGS='channel --port 9090'
 
 | Command | Description |
 |---------|-------------|
-| `make install` | Install binary to ~/.local/bin with config |
-| `make uninstall` | Remove binary (preserves config and data) |
+| `make install` | Install binaries to ~/.local/bin with config |
+| `make uninstall` | Remove binaries (preserves config and data) |
 | `make sync` | Install dependencies (development) |
 | `make run` | Run the CLI application |
 | `make run ARGS='serve'` | Start the web UI server (standalone) |
@@ -127,8 +130,9 @@ See also [Channel Configuration](#channel-configuration) above for channel speci
 
 | Path | Purpose |
 |------|---------|
+| `~/.local/bin/claude-webui` | Launcher script |
+| `~/.local/bin/claude-code-webui` | Backend binary |
 | `~/.config/ccwebui/.env` | Configuration file |
-| `~/.config/ccwebui/mcp.json` | MCP server config for `claude --mcp-config` |
 | `~/.local/share/ccwebui/ccwebui.db` | SQLite database |
 | `~/Downloads/` | Uploaded files |
 | `~/.claude/channels/webui/` | MCP channel state (inbox/outbox) |
@@ -137,6 +141,8 @@ See also [Channel Configuration](#channel-configuration) above for channel speci
 
 ```
 claude-code-webui/
+├── bin/
+│   └── claude-webui            # Launcher script (installed to ~/.local/bin)
 ├── src/
 │   ├── claude_code_webui.py  # CLI entry point (Typer, serve + channel commands)
 │   ├── api.py                # FastAPI server with OTel, routes, lifespan
