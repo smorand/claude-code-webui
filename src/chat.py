@@ -11,8 +11,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from tracing import trace_span
 
 if TYPE_CHECKING:
-    from channel import ChannelProtocol
-    from config import Settings
+    from channel_bridge import ChannelBridge
     from database import Database
 
 logger = logging.getLogger(__name__)
@@ -64,41 +63,18 @@ async def _resolve_attachments(
     return file_paths
 
 
-async def _stream_response(
-    channel: ChannelProtocol,
-    db: Database,
-    websocket: WebSocket,
-    conversation_id: str,
-    content: str,
-    history: list[dict[str, str]],
-    file_paths: list[str],
-) -> None:
-    """Send message to channel and stream response back via WebSocket."""
-    with trace_span("ws.stream_response"):
-        chunks = await channel.send_message(
-            message=content,
-            history=history,
-            file_paths=file_paths if file_paths else None,
-        )
-
-        full_response = ""
-        for chunk in chunks:
-            full_response += chunk
-            await websocket.send_json({"type": "assistant_chunk", "content": chunk, "conversation_id": conversation_id})
-
-        await db.add_message(conversation_id, "assistant", full_response)
-        await websocket.send_json(
-            {"type": "assistant_complete", "content": full_response, "conversation_id": conversation_id}
-        )
-
-
-def create_chat_router(settings: Settings, db: Database, channel: ChannelProtocol) -> APIRouter:
+def create_chat_router(db: Database, bridge: ChannelBridge) -> APIRouter:
     """Create the WebSocket chat router."""
     router = APIRouter()
 
     @router.websocket("/ws/chat")
     async def websocket_chat(websocket: WebSocket) -> None:
-        """Handle WebSocket chat connections."""
+        """Handle WebSocket chat connections for the htmx frontend.
+
+        This endpoint handles the chat UI protocol (user_message type),
+        conversation management, file attachments, and delivers messages
+        through the channel bridge to Claude.
+        """
         await websocket.accept()
         conversation_id: str | None = None
 
@@ -132,10 +108,13 @@ def create_chat_router(settings: Settings, db: Database, channel: ChannelProtoco
                     user_msg = await db.add_message(conversation_id, "user", content)
                     file_paths = await _resolve_attachments(db, websocket, attachments, user_msg.id)
 
-                    history_rows = await db.get_messages(conversation_id, limit=settings.max_history_messages)
-                    history = [{"role": m.role, "content": m.content} for m in history_rows]
-
-                    await _stream_response(channel, db, websocket, conversation_id, content, history, file_paths)
+                    first_file = file_paths[0] if file_paths else None
+                    await bridge.deliver(
+                        message_id=user_msg.id,
+                        text=content,
+                        chat_id=conversation_id,
+                        file_path=first_file,
+                    )
 
         except WebSocketDisconnect:
             logger.info("WebSocket disconnected for conversation %s", conversation_id)

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "webui": {
+      "command": "uv",
+      "args": ["run", "claude-code-webui", "channel"]
+    }
+  }
+}
