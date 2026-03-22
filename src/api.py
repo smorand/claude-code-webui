@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Form, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -70,8 +70,8 @@ def _register_channel_endpoints(
 
     @application.post("/upload", status_code=204)
     async def channel_upload(
-        id: str,
-        text: str = "",
+        id: str = Form(...),
+        text: str = Form(""),
         file: UploadFile | None = None,
     ) -> Response:
         """Upload a file and deliver via the MCP channel."""

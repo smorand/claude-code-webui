@@ -60,11 +60,10 @@ class ConversationRow:
     updated_at: str
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class MessageRow:
     """Value object for a message record."""
 
-    __slots__ = ("content", "conversation_id", "created_at", "edited_at", "id", "role")
     id: str
     conversation_id: str
     role: str

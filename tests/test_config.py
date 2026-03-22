@@ -19,6 +19,9 @@ def test_default_settings() -> None:
     assert ".txt" in settings.allowed_upload_extensions
     assert settings.max_history_messages == 100
     assert settings.database_path == "./data/ccwebui.db"
+    assert settings.channel_name == "webui"
+    assert settings.channel_max_file_size == 52_428_800
+    assert "webui" in str(settings.channel_state_dir)
 
 
 def test_settings_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -29,6 +32,7 @@ def test_settings_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CCWEBUI_MAX_UPLOAD_SIZE_MB", "25")
     monkeypatch.setenv("CCWEBUI_DATABASE_PATH", "/tmp/test.db")
     monkeypatch.setenv("CCWEBUI_MAX_HISTORY_MESSAGES", "50")
+    monkeypatch.setenv("CCWEBUI_CHANNEL_NAME", "custom")
     settings = Settings()
     assert settings.app_name == "test_app"
     assert settings.debug is True
@@ -36,3 +40,4 @@ def test_settings_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.max_upload_size_mb == 25
     assert settings.database_path == "/tmp/test.db"
     assert settings.max_history_messages == 50
+    assert settings.channel_name == "custom"
