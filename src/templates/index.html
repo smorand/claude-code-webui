@@ -452,7 +452,8 @@
                 if (xhr.status === 201) {
                     const result = JSON.parse(xhr.responseText);
                     const info = result.files[0];
-                    appendSystemMessage('File available: ' + info.path, 'success');
+                    navigator.clipboard.writeText(info.path).catch(function() {});
+                    appendSystemMessage('File available (copied to clipboard): ' + info.path, 'success');
                 } else {
                     let detail = 'Unknown error';
                     try {
