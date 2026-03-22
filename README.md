@@ -1,6 +1,6 @@
 # Claude Code Web UI
 
-A web interface for interacting with Claude Code CLI. Features a real time chat UI built with htmx, file upload support, and SQLite backed conversation persistence.
+A web interface for interacting with Claude Code CLI. Features an MCP channel server as the sole communication channel with Claude Code, a real time chat UI built with htmx, file upload support, and SQLite backed conversation persistence.
 
 ## Requirements
 
@@ -13,7 +13,7 @@ A web interface for interacting with Claude Code CLI. Features a real time chat 
 # Install dependencies
 make sync
 
-# Start the web UI server
+# Start the web UI server (standalone, no Claude Code integration)
 make run ARGS='serve'
 
 # Start with auto reload for development
@@ -22,12 +22,54 @@ make run ARGS='serve --reload'
 
 Open http://localhost:8080 in your browser to start chatting.
 
+## Channel Integration
+
+The MCP channel is the **sole communication path** between the web UI and Claude Code. There is no CLI subprocess fallback.
+
+### How It Works
+
+1. Claude Code spawns the MCP channel server as a subprocess
+2. The server communicates with Claude Code over stdio using the MCP protocol
+3. The server declares the `claude/channel` experimental capability
+4. User messages from the browser are forwarded to Claude via `notifications/claude/channel`
+5. Claude responds by calling the `reply` and `edit_message` tools
+6. Responses are broadcast to connected browser clients via WebSocket
+
+### Usage with Claude Code
+
+```bash
+# Using the .mcp.json configuration (development mode)
+claude --dangerously-load-development-channels server:webui
+```
+
+### Manual Testing
+
+```bash
+# Start the MCP channel server with HTTP/WebSocket
+make run ARGS='channel'
+
+# With custom port
+make run ARGS='channel --port 9090'
+```
+
+### Channel Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CCWEBUI_CHANNEL_NAME` | `webui` | MCP server name (source attribute in channel tags) |
+| `CCWEBUI_CHANNEL_STATE_DIR` | `~/.claude/channels/webui/` | Base directory for channel state |
+| `CCWEBUI_CHANNEL_INBOX_DIR` | `{state_dir}/inbox/` | Directory for inbound file uploads |
+| `CCWEBUI_CHANNEL_OUTBOX_DIR` | `{state_dir}/outbox/` | Directory for outbound file attachments |
+| `CCWEBUI_CHANNEL_MAX_FILE_SIZE` | `52428800` (50MB) | Maximum file size in bytes |
+
 ## Features
 
-- **Chat Interface**: Real time conversational UI with WebSocket streaming, Markdown rendering, and multi turn conversations
+- **MCP Channel**: Sole communication channel with Claude Code via MCP protocol over stdio
+- **Chat Interface**: Real time conversational UI with WebSocket, Markdown rendering, and multi turn conversations
 - **File Upload**: Attach files to messages (drag and drop or file picker), with validation for size and file types
+- **File Attachments**: Claude can send files back to the browser via the reply tool
 - **Conversation History**: SQLite backed persistence across server restarts, with configurable history limits
-- **MCP Channel**: Pluggable communication layer for Claude integration (stub provided for development)
+- **Message Editing**: Claude can edit previously sent messages
 
 ## Available Commands
 
@@ -35,7 +77,8 @@ Open http://localhost:8080 in your browser to start chatting.
 |---------|-------------|
 | `make sync` | Install dependencies |
 | `make run` | Run the CLI application |
-| `make run ARGS='serve'` | Start the web UI server |
+| `make run ARGS='serve'` | Start the web UI server (standalone) |
+| `make run ARGS='channel'` | Start the MCP channel server |
 | `make test` | Run tests |
 | `make test-cov` | Run tests with coverage |
 | `make check` | Run all quality checks |
@@ -61,6 +104,8 @@ Configuration is done via environment variables with the `CCWEBUI_` prefix:
 | `CCWEBUI_MAX_HISTORY_MESSAGES` | `100` | Max messages sent to Claude as context |
 | `CCWEBUI_DATABASE_PATH` | `./data/ccwebui.db` | SQLite database file path |
 
+See also [Channel Configuration](#channel-configuration) above for channel specific settings.
+
 You can also create a `.env` file in the project root.
 
 ## Project Structure
@@ -68,12 +113,13 @@ You can also create a `.env` file in the project root.
 ```
 claude-code-webui/
 ├── src/
-│   ├── claude_code_webui.py  # CLI entry point (Typer)
+│   ├── claude_code_webui.py  # CLI entry point (Typer, serve + channel commands)
 │   ├── api.py                # FastAPI server with OTel, routes, lifespan
 │   ├── config.py             # Settings (pydantic-settings)
 │   ├── database.py           # SQLite database layer (aiosqlite)
-│   ├── chat.py               # WebSocket chat handler
-│   ├── channel.py            # MCP channel protocol and stub
+│   ├── chat.py               # WebSocket chat handler (/ws/chat)
+│   ├── channel.py            # MCP channel server (stdio, tools, protocol)
+│   ├── channel_bridge.py     # Shared state bridge (MCP <-> FastAPI)
 │   ├── file_upload.py        # File upload endpoint and validation
 │   ├── logging_config.py     # Logging setup (rich + file)
 │   ├── tracing.py            # OpenTelemetry tracing (JSONL)
@@ -83,6 +129,7 @@ claude-code-webui/
 ├── tests/                    # Unit tests
 │   └── functional/           # Integration tests
 ├── specs/                    # Specifications and backlog
+├── .mcp.json                 # MCP server configuration for Claude Code
 ├── pyproject.toml            # Project configuration
 ├── Makefile                  # Build automation
 ├── Dockerfile                # Container build
