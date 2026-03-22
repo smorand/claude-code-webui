@@ -24,4 +24,4 @@ MCP_CONFIG="{\"mcpServers\":{\"webui\":{\"type\":\"stdio\",\"command\":\"$BINARY
 
 echo "Web UI will be available at http://localhost:$PORT"
 
-exec claude --mcp-config "$MCP_CONFIG" "$@"
+exec claude --mcp-config "$MCP_CONFIG" --dangerously-load-development-channels server:webui "$@"
