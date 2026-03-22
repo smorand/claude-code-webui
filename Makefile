@@ -166,12 +166,20 @@ install:
 		echo "# CCWEBUI_DATABASE_PATH=~/.local/share/ccwebui/ccwebui.db" >> ~/.config/ccwebui/.env; \
 		echo "Created config: ~/.config/ccwebui/.env"; \
 	fi
+	@printf '{\n  "mcpServers": {\n    "webui": {\n      "type": "stdio",\n      "command": "%s",\n      "args": ["channel"]\n    }\n  }\n}\n' \
+		"$$(which $(PROJECT_NAME) 2>/dev/null || echo "$$HOME/.local/bin/$(PROJECT_NAME)")" \
+		> ~/.config/ccwebui/mcp.json
+	@echo "Created MCP config: ~/.config/ccwebui/mcp.json"
 	@echo ""
 	@echo "Install complete!"
 	@echo "  Binary:  ~/.local/bin/$(PROJECT_NAME)"
 	@echo "  Config:  ~/.config/ccwebui/.env"
+	@echo "  MCP:     ~/.config/ccwebui/mcp.json"
 	@echo "  Data:    ~/.local/share/ccwebui/"
 	@echo "  Uploads: ~/Downloads/"
+	@echo ""
+	@echo "Usage:"
+	@echo "  claude --mcp-config ~/.config/ccwebui/mcp.json"
 	@echo ""
 	@echo "Ensure ~/.local/bin is in your PATH."
 

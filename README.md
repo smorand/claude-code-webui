@@ -17,6 +17,7 @@ make install
 This creates:
 - `~/.local/bin/claude-code-webui` : Binary
 - `~/.config/ccwebui/.env` : Configuration file
+- `~/.config/ccwebui/mcp.json` : MCP server config for Claude Code
 - `~/.local/share/ccwebui/` : Database and application data
 
 Ensure `~/.local/bin` is in your `PATH`.
@@ -52,8 +53,8 @@ The MCP channel is the **sole communication path** between the web UI and Claude
 ### Usage with Claude Code
 
 ```bash
-# Using the .mcp.json configuration (development mode)
-claude --dangerously-load-development-channels server:webui
+# After make install, start Claude with the MCP config
+claude --mcp-config ~/.config/ccwebui/mcp.json
 ```
 
 ### Manual Testing
@@ -127,6 +128,7 @@ See also [Channel Configuration](#channel-configuration) above for channel speci
 | Path | Purpose |
 |------|---------|
 | `~/.config/ccwebui/.env` | Configuration file |
+| `~/.config/ccwebui/mcp.json` | MCP server config for `claude --mcp-config` |
 | `~/.local/share/ccwebui/ccwebui.db` | SQLite database |
 | `~/Downloads/` | Uploaded files |
 | `~/.claude/channels/webui/` | MCP channel state (inbox/outbox) |
@@ -152,7 +154,7 @@ claude-code-webui/
 ├── tests/                    # Unit tests
 │   └── functional/           # Integration tests
 ├── specs/                    # Specifications and backlog
-├── .mcp.json                 # MCP server configuration for Claude Code
+├── .mcp.json                 # MCP server configuration (development only)
 ├── pyproject.toml            # Project configuration
 ├── Makefile                  # Build automation
 ├── Dockerfile                # Container build
