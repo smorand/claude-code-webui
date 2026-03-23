@@ -32,7 +32,7 @@ make check              # Full quality gate (lint, format, typecheck, security, 
 - `src/claude_code_webui.py` : CLI entry point (Typer app with serve and channel commands)
 - `src/api.py` : FastAPI server with OTel, routes, lifespan (DB init, upload dir, conditional auth)
 - `src/auth.py` : OAuth2 authentication (GCP, login/callback/logout, session middleware, get_current_user dependency)
-- `src/config.py` : Settings via pydantic-settings (CCWEBUI_ prefix, OAuth2 config with validation)
+- `src/config.py` : Settings via pydantic-settings (CCWEBUI_ prefix, OAuth2/TLS config from YAML with validation)
 - `src/database.py` : SQLite database layer (aiosqlite, WAL mode, repository pattern, users table)
 - `src/chat.py` : WebSocket chat handler (/ws/chat)
 - `src/channel.py` : MCP channel server (stdio transport, reply/edit_message tools, channel protocol)
@@ -40,7 +40,8 @@ make check              # Full quality gate (lint, format, typecheck, security, 
 - `src/file_upload.py` : File upload endpoint (POST /api/files/upload)
 - `src/logging_config.py` : Logging setup with rich + file output
 - `src/tracing.py` : OpenTelemetry tracing with JSONL export
-- `src/templates/index.html` : Chat frontend (htmx + Jinja2)
+- `src/templates/index.html` : Chat frontend (htmx + Jinja2, drag/drop, clipboard paste, progress bar)
+- `src/templates/unauthorized.html` : OAuth2 access denied page (styled 403 with retry)
 - `src/templates/partials/` : htmx partial templates
 - `.mcp.json` : MCP server configuration for Claude Code discovery
 - `tests/` : Unit tests

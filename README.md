@@ -124,12 +124,30 @@ make run ARGS='channel --port 9090'
 
 ## Features
 
-- **MCP Channel**: Sole communication channel with Claude Code via MCP protocol over stdio
-- **Chat Interface**: Real time conversational UI with WebSocket, Markdown rendering, and multi turn conversations
-- **File Upload**: Attach files to messages (drag and drop or file picker), with validation for size and file types
-- **File Attachments**: Claude can send files back to the browser via the reply tool
-- **Conversation History**: SQLite backed persistence across server restarts, with configurable history limits
-- **Message Editing**: Claude can edit previously sent messages
+### Communication
+- **MCP Channel**: Sole communication path with Claude Code via MCP protocol over stdio (no CLI subprocess fallback)
+- **Real time Chat**: WebSocket based conversational UI with Markdown rendering, code blocks, and multi turn conversations
+- **Conversation Persistence**: SQLite backed history across server restarts, with configurable context limits and auto generated titles
+
+### File Handling
+- **File Upload**: Multiple upload methods: click to browse, drag and drop onto drop zone, or drag and drop anywhere on the page
+- **Clipboard Paste**: Paste images directly from clipboard (auto saved as `screenshot_YYYYMMDDHHMMSS.png`)
+- **Upload Progress**: Visual progress bar with percentage during file upload
+- **File Validation**: Extension whitelist (90+ types) and size limit enforcement with error feedback
+- **File Attachments**: Claude can send files back to the browser as downloadable links via the reply tool
+
+### Authentication & Security
+- **Google OAuth2**: Optional authentication via GCP with login, callback, logout, and profile endpoints
+- **Email Whitelist**: Strict access control via `allowed_emails` list (required when OAuth2 is enabled)
+- **Dynamic Redirect URI**: OAuth2 callback URL computed from request origin, validated against `allowed_origins` (supports reverse proxies via X-Forwarded headers)
+- **TLS Support**: Optional HTTPS via `ssl_certfile`/`ssl_keyfile`, required for non localhost origins
+- **Unauthorized Page**: Styled 403 page with the denied email and a "Try another account" button to retrigger authentication
+- **Logout**: Header button (visible when auth is enabled) clears session and redirects to login
+
+### Observability
+- **Logging**: Rich console output with file based logs in `~/.cache/ccwebui/logs/`
+- **Tracing**: OpenTelemetry spans exported as JSONL, covering auth, database, channel, file upload, and WebSocket operations
+- **Message Editing**: Claude can edit previously sent assistant messages in real time
 
 ## Available Commands
 
@@ -204,6 +222,7 @@ claude-code-webui/
 │   ├── tracing.py            # OpenTelemetry tracing (JSONL)
 │   └── templates/
 │       ├── index.html         # Chat frontend (htmx)
+│       ├── unauthorized.html  # OAuth2 access denied page
 │       └── partials/          # htmx partial templates
 ├── tests/                    # Unit tests
 │   └── functional/           # Integration tests
