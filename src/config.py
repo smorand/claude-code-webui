@@ -1,18 +1,24 @@
 """Application settings using pydantic-settings."""
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_CONFIG_DIR = Path.home() / ".config" / "ccwebui"
+_DATA_DIR = Path.home() / ".local" / "share" / "ccwebui"
+_CACHE_DIR = Path.home() / ".cache" / "ccwebui"
 
 
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables.
 
-    Environment variables are prefixed with CCWEBUI_ (e.g., CCWEBUI_APP_NAME).
-    A .env file is loaded automatically if present.
+    Configuration is loaded in order: defaults, config file (~/.config/ccwebui/.env),
+    then environment variables (CCWEBUI_ prefix). Environment variables take precedence.
     """
 
     model_config = SettingsConfigDict(
         env_prefix="CCWEBUI_",
-        env_file=".env",
+        env_file=str(_CONFIG_DIR / ".env"),
         env_file_encoding="utf-8",
     )
 
@@ -21,7 +27,7 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"  # nosec B104
     port: int = 8080
 
-    upload_dir: str = "./uploads"
+    upload_dir: str = str(Path.home() / "Downloads")
     max_upload_size_mb: int = 10
     allowed_upload_extensions: list[str] = [
         ".txt",
@@ -77,4 +83,21 @@ class Settings(BaseSettings):
         ".makefile",
     ]
     max_history_messages: int = 100
-    database_path: str = "./data/ccwebui.db"
+    database_path: str = str(_DATA_DIR / "ccwebui.db")
+    log_dir: str = str(_CACHE_DIR / "logs")
+
+    channel_name: str = "webui"
+    channel_state_dir: Path = Path.home() / ".claude" / "channels" / "webui"
+    channel_inbox_dir: Path | None = None
+    channel_outbox_dir: Path | None = None
+    channel_max_file_size: int = 52_428_800
+
+    @property
+    def resolved_inbox_dir(self) -> Path:
+        """Return inbox directory, defaulting to {channel_state_dir}/inbox/."""
+        return self.channel_inbox_dir or (self.channel_state_dir / "inbox")
+
+    @property
+    def resolved_outbox_dir(self) -> Path:
+        """Return outbox directory, defaulting to {channel_state_dir}/outbox/."""
+        return self.channel_outbox_dir or (self.channel_state_dir / "outbox")

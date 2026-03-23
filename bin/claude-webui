@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Find an available port in range 8080..8089
+find_port() {
+    local port
+    for port in $(seq 8080 8089); do
+        if ! lsof -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+            echo "$port"
+            return 0
+        fi
+    done
+    return 1
+}
+
+PORT=$(find_port) || {
+    echo "Error: no available port in range 8080..8089" >&2
+    exit 1
+}
+
+BINARY="$(command -v claude-code-webui 2>/dev/null || echo "$HOME/.local/bin/claude-code-webui")"
+
+MCP_CONFIG="{\"mcpServers\":{\"webui\":{\"type\":\"stdio\",\"command\":\"$BINARY\",\"args\":[\"channel\",\"--port\",\"$PORT\"]}}}"
+
+echo "Web UI will be available at http://localhost:$PORT"
+
+exec claude --mcp-config "$MCP_CONFIG" --dangerously-load-development-channels server:webui "$@"

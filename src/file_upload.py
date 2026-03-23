@@ -44,7 +44,9 @@ def create_file_upload_router(settings: Settings, db: Database) -> APIRouter:
     async def upload_files(
         files: list[UploadFile],
     ) -> dict[str, list[dict[str, str | int]]]:
-        """Upload one or more files."""
+        """Upload one or more files to the configured upload directory."""
+        upload_dir = Path(settings.upload_dir)
+        upload_dir.mkdir(parents=True, exist_ok=True)
         results: list[dict[str, str | int]] = []
 
         for upload in files:
@@ -52,6 +54,13 @@ def create_file_upload_router(settings: Settings, db: Database) -> APIRouter:
                 filename = upload.filename or "unnamed"
 
                 _validate_extension(filename)
+
+                file_path = upload_dir / filename
+                if file_path.exists():
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"File '{filename}' already exists in {settings.upload_dir}",
+                    )
 
                 content = await upload.read()
                 size = len(content)
@@ -62,9 +71,6 @@ def create_file_upload_router(settings: Settings, db: Database) -> APIRouter:
                 _validate_size(size)
 
                 file_id = str(uuid.uuid4())
-                file_dir = Path(settings.upload_dir) / file_id
-                file_dir.mkdir(parents=True, exist_ok=True)
-                file_path = file_dir / filename
                 file_path.write_bytes(content)
 
                 content_type = upload.content_type or "application/octet-stream"
@@ -83,10 +89,11 @@ def create_file_upload_router(settings: Settings, db: Database) -> APIRouter:
                         "filename": filename,
                         "size": size,
                         "content_type": content_type,
+                        "path": str(file_path),
                     }
                 )
 
-                logger.info("File uploaded: %s (%d bytes)", filename, size)
+                logger.info("File uploaded: %s (%d bytes) -> %s", filename, size, file_path)
 
         return {"files": results}
 

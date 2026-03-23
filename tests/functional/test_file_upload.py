@@ -49,7 +49,7 @@ async def client(settings: Settings, tmp_path: Path, monkeypatch: pytest.MonkeyP
 
 
 async def test_upload_file_success(client: AsyncClient, settings: Settings) -> None:
-    """E2E-NEW-003: Upload a valid file successfully."""
+    """Upload a valid file saves directly to upload_dir."""
     content = b"print('hello world')"
     response = await client.post(
         "/api/files/upload",
@@ -62,13 +62,30 @@ async def test_upload_file_success(client: AsyncClient, settings: Settings) -> N
     assert data["files"][0]["size"] == len(content)
     assert data["files"][0]["content_type"] == "text/x-python"
     assert "file_id" in data["files"][0]
+    assert data["files"][0]["path"] == str(Path(settings.upload_dir) / "test.py")
 
-    file_path = Path(settings.upload_dir) / data["files"][0]["file_id"] / "test.py"
+    file_path = Path(settings.upload_dir) / "test.py"
     assert file_path.exists()
+    assert file_path.read_bytes() == content
+
+
+async def test_upload_duplicate_file_rejected(client: AsyncClient, settings: Settings) -> None:
+    """Upload a file that already exists returns 409 conflict."""
+    content = b"x = 1"
+    await client.post(
+        "/api/files/upload",
+        files=[("files", ("dup.py", io.BytesIO(content), "text/x-python"))],
+    )
+    response = await client.post(
+        "/api/files/upload",
+        files=[("files", ("dup.py", io.BytesIO(content), "text/x-python"))],
+    )
+    assert response.status_code == 409
+    assert "already exists" in response.json()["detail"].lower()
 
 
 async def test_upload_oversized_file_rejected(client: AsyncClient) -> None:
-    """E2E-NEW-004: Upload file exceeding max size is rejected."""
+    """Upload file exceeding max size is rejected."""
     large_content = b"x" * (2 * 1024 * 1024)  # 2 MB, limit is 1 MB
     response = await client.post(
         "/api/files/upload",
@@ -79,7 +96,7 @@ async def test_upload_oversized_file_rejected(client: AsyncClient) -> None:
 
 
 async def test_upload_disallowed_extension_rejected(client: AsyncClient) -> None:
-    """E2E-NEW-005: Upload file with disallowed extension is rejected."""
+    """Upload file with disallowed extension is rejected."""
     response = await client.post(
         "/api/files/upload",
         files=[("files", ("malware.exe", io.BytesIO(b"bad"), "application/octet-stream"))],
@@ -89,7 +106,7 @@ async def test_upload_disallowed_extension_rejected(client: AsyncClient) -> None
 
 
 async def test_upload_empty_file_rejected(client: AsyncClient) -> None:
-    """E2E-NEW-013: Upload empty file is rejected."""
+    """Upload empty file is rejected."""
     response = await client.post(
         "/api/files/upload",
         files=[("files", ("empty.txt", io.BytesIO(b""), "text/plain"))],
@@ -98,8 +115,8 @@ async def test_upload_empty_file_rejected(client: AsyncClient) -> None:
     assert "empty" in response.json()["detail"].lower()
 
 
-async def test_upload_multiple_files(client: AsyncClient) -> None:
-    """E2E-NEW-014: Upload multiple files in single request."""
+async def test_upload_multiple_files(client: AsyncClient, settings: Settings) -> None:
+    """Upload multiple files in single request saves all to upload_dir."""
     response = await client.post(
         "/api/files/upload",
         files=[
@@ -110,5 +127,6 @@ async def test_upload_multiple_files(client: AsyncClient) -> None:
     assert response.status_code == 201
     data = response.json()
     assert len(data["files"]) == 2
-    file_ids = [f["file_id"] for f in data["files"]]
-    assert file_ids[0] != file_ids[1]
+
+    assert (Path(settings.upload_dir) / "file1.txt").exists()
+    assert (Path(settings.upload_dir) / "file2.py").exists()
