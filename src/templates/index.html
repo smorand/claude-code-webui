@@ -28,11 +28,15 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            height: 100vh;
             display: flex;
             flex-direction: column;
         }
@@ -87,7 +91,9 @@
 
         #chat-container {
             flex: 1;
+            min-height: 0;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             padding: 24px;
             display: flex;
             flex-direction: column;
@@ -252,9 +258,17 @@
         }
 
         @media (max-width: 768px) {
-            .message { max-width: 90%; }
-            #chat-container { padding: 12px; }
-            #input-area { padding: 12px; }
+            .message { max-width: 95%; }
+            #chat-container { padding: 8px; gap: 10px; }
+            #input-area { padding: 8px 10px; }
+            header { padding: 6px 10px; }
+            header h1 { font-size: 0.9rem; white-space: nowrap; }
+            .header-actions { gap: 4px; }
+            #new-conversation-btn, #logout-btn { padding: 5px 8px; font-size: 0.75rem; }
+            #drop-zone { padding: 6px; font-size: 0.75rem; margin-bottom: 4px; }
+            #message-input { padding: 8px 10px; font-size: 16px; }
+            #send-btn { padding: 8px 14px; font-size: 0.9rem; }
+            .message { padding: 10px 12px; font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -594,6 +608,21 @@
                 this.style.height = Math.min(this.scrollHeight, 150) + 'px';
             });
             textarea.addEventListener('paste', handlePaste);
+
+            // On mobile, set body height from actual visible viewport
+            // to account for browser chrome (address bar, toolbar)
+            function setViewportHeight() {
+                var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                document.body.style.height = vh + 'px';
+            }
+            setViewportHeight();
+            window.addEventListener('resize', setViewportHeight);
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', function() {
+                    setViewportHeight();
+                    scrollToBottom();
+                });
+            }
 
             connectWebSocket();
         });
