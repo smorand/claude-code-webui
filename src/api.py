@@ -177,14 +177,14 @@ def create_app(
         @application.get("/", response_class=HTMLResponse)
         async def index_protected(request: Request, _user: dict[str, Any] = Depends(get_current_user)) -> HTMLResponse:
             """Serve the chat frontend (authenticated)."""
-            return templates.TemplateResponse(request, "index.html")
+            return templates.TemplateResponse(request, "index.html", {"auth_enabled": True})
 
     else:
 
         @application.get("/", response_class=HTMLResponse)
         async def index(request: Request) -> HTMLResponse:
             """Serve the chat frontend."""
-            return templates.TemplateResponse(request, "index.html")
+            return templates.TemplateResponse(request, "index.html", {"auth_enabled": False})
 
     _register_channel_endpoints(application, bridge, settings)
     auth_dep = get_current_user if settings.oauth2_enabled else None
