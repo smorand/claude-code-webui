@@ -26,6 +26,8 @@ dependencies = [
     "aiosqlite>=0.20.0",
     "jinja2>=3.1.0",
     "mcp>=1.2.0",
+    "authlib>=1.3.0",
+    "itsdangerous>=2.2.0",
 ]
 
 [dependency-groups]
@@ -83,7 +85,7 @@ ignore = [
 "tests/*" = ["ARG", "PLR2004"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["claude_code_webui", "api", "config", "logging_config", "tracing", "services", "database", "chat", "channel", "channel_bridge", "file_upload"]
+known-first-party = ["claude_code_webui", "api", "config", "logging_config", "tracing", "services", "database", "chat", "channel", "channel_bridge", "file_upload", "auth"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -108,7 +110,7 @@ show_error_codes = true
 show_column_numbers = true
 
 [[tool.mypy.overrides]]
-module = ["httpx.*", "opentelemetry.*", "uvicorn.*", "aiosqlite.*", "mcp.*"]
+module = ["httpx.*", "opentelemetry.*", "uvicorn.*", "aiosqlite.*", "mcp.*", "authlib.*"]
 ignore_missing_imports = true
 
 # pytest

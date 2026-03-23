@@ -46,6 +46,14 @@ CREATE TABLE IF NOT EXISTS files (
 );
 
 CREATE INDEX IF NOT EXISTS idx_files_message_id ON files(message_id);
+
+CREATE TABLE IF NOT EXISTS users (
+    email TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    picture TEXT,
+    created_at TEXT NOT NULL,
+    last_login_at TEXT NOT NULL
+);
 """
 
 
@@ -84,6 +92,17 @@ class FileRow:
     content_type: str
     storage_path: str
     created_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class UserRow:
+    """Value object for a user record."""
+
+    email: str
+    name: str
+    picture: str | None
+    created_at: str
+    last_login_at: str
 
 
 class Database:
@@ -303,3 +322,38 @@ class Database:
                     )
                     for row in rows
                 ]
+
+    async def upsert_user(self, email: str, name: str, picture: str | None) -> UserRow:
+        """Insert or update a user profile. Updates name, picture, and last_login_at on conflict."""
+        with trace_span("db.upsert_user"):
+            now = datetime.now(UTC).isoformat()
+            async with aiosqlite.connect(self._db_path) as db:
+                await db.execute(
+                    """INSERT INTO users (email, name, picture, created_at, last_login_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(email) DO UPDATE SET
+                        name = excluded.name,
+                        picture = excluded.picture,
+                        last_login_at = excluded.last_login_at""",
+                    (email, name, picture, now, now),
+                )
+                await db.commit()
+            logger.info("User upserted: %s", email)
+            return UserRow(email=email, name=name, picture=picture, created_at=now, last_login_at=now)
+
+    async def get_user(self, email: str) -> UserRow | None:
+        """Get a user by email, or None if not found."""
+        with trace_span("db.get_user"):
+            async with aiosqlite.connect(self._db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute("SELECT * FROM users WHERE email = ?", (email,))
+                row = await cursor.fetchone()
+                if row is None:
+                    return None
+                return UserRow(
+                    email=row["email"],
+                    name=row["name"],
+                    picture=row["picture"],
+                    created_at=row["created_at"],
+                    last_login_at=row["last_login_at"],
+                )
