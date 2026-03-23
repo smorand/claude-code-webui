@@ -148,14 +148,9 @@ Configuration is loaded from `~/.config/ccwebui/.env`, then overridden by enviro
 | `CCWEBUI_MAX_HISTORY_MESSAGES` | `100` | Max messages sent to Claude as context |
 | `CCWEBUI_DATABASE_PATH` | `~/.local/share/ccwebui/ccwebui.db` | SQLite database file path |
 | `CCWEBUI_LOG_DIR` | `~/.cache/ccwebui/logs` | Directory for log files |
-| `CCWEBUI_OAUTH2_ENABLED` | `false` | Enable OAuth2 authentication |
-| `CCWEBUI_OAUTH2_CLIENT_ID` | (required if enabled) | Google OAuth2 client ID |
-| `CCWEBUI_OAUTH2_CLIENT_SECRET` | (required if enabled) | Google OAuth2 client secret |
-| `CCWEBUI_OAUTH2_REDIRECT_URI` | (required if enabled) | OAuth2 callback URL |
-| `CCWEBUI_OAUTH2_ALLOWED_EMAILS` | (required if enabled) | Comma separated list of allowed email addresses |
-| `CCWEBUI_SESSION_SECRET_KEY` | (required if enabled) | Secret for signing session cookies |
-
 See also [Channel Configuration](#channel-configuration) above for channel specific settings.
+
+OAuth2 settings are configured via `~/.config/ccwebui/oauth2.yaml` (see [Prerequisites](#prerequisites-oauth2-authentication)). Environment variables with the `CCWEBUI_OAUTH2_` prefix can override YAML values.
 
 ### File Locations
 
