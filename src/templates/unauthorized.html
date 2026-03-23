@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Denied</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #1a1a2e;
+            color: #e8e8e8;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 480px;
+            padding: 48px 32px;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .shield {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 32px;
+            position: relative;
+        }
+
+        .shield svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 24px rgba(233, 69, 96, 0.4));
+            animation: pulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { filter: drop-shadow(0 0 24px rgba(233, 69, 96, 0.4)); }
+            50% { filter: drop-shadow(0 0 40px rgba(233, 69, 96, 0.6)); }
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #e94560;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #a0a0b0;
+            margin-bottom: 8px;
+        }
+
+        .email {
+            display: inline-block;
+            background: #16213e;
+            border: 1px solid #2a2a4a;
+            border-radius: 8px;
+            padding: 8px 16px;
+            margin: 16px 0 32px;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.95rem;
+            color: #ff6b81;
+        }
+
+        .message {
+            font-size: 0.95rem;
+            color: #a0a0b0;
+            line-height: 1.6;
+            margin-bottom: 36px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            border: none;
+        }
+
+        .btn-primary {
+            background: #e94560;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #ff6b81;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #a0a0b0;
+            border: 1px solid #2a2a4a;
+        }
+
+        .btn-secondary:hover {
+            color: #e8e8e8;
+            border-color: #4a4a6a;
+            transform: translateY(-1px);
+        }
+
+        .divider {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #e94560, transparent);
+            margin: 0 auto 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="shield">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L3 7V12C3 17.55 6.84 22.74 12 24C17.16 22.74 21 17.55 21 12V7L12 2Z"
+                      fill="#16213e" stroke="#e94560" stroke-width="1.5"/>
+                <line x1="8" y1="9" x2="16" y2="17" stroke="#e94560" stroke-width="2" stroke-linecap="round"/>
+                <line x1="16" y1="9" x2="8" y2="17" stroke="#e94560" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </div>
+
+        <h1>Access Denied</h1>
+        <p class="subtitle">Your account is not authorized</p>
+
+        <div class="email">{{ email }}</div>
+
+        <div class="divider"></div>
+
+        <p class="message">
+            This email is not on the list of authorized users.
+            Contact the administrator if you believe this is an error.
+        </p>
+
+        <div class="actions">
+            <a href="/auth/logout" class="btn btn-primary">Try another account</a>
+            <a href="/auth/login" class="btn btn-secondary">Back to login</a>
+        </div>
+    </div>
+</body>
+</html>

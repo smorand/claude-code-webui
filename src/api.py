@@ -8,14 +8,16 @@ import mimetypes
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from fastapi import FastAPI, Form, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, Form, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request  # noqa: TC002 -- needed at runtime for FastAPI annotation resolution
 
+from auth import create_auth_router, get_current_user
 from channel_bridge import ChannelBridge
 from chat import create_chat_router
 from config import Settings
@@ -154,20 +156,40 @@ def create_app(
         provider.shutdown()
 
     application = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
+    application.state.db = db
+
+    if settings.oauth2_enabled:
+        application.add_middleware(
+            SessionMiddleware,
+            secret_key=settings.session_secret_key,
+            https_only=False,
+            same_site="lax",
+        )
+        application.include_router(create_auth_router(settings, db))
 
     @application.get("/health")
     async def health() -> dict[str, str]:
         """Health check endpoint."""
         return {"status": "healthy"}
 
-    @application.get("/", response_class=HTMLResponse)
-    async def index(request: Request) -> HTMLResponse:
-        """Serve the chat frontend."""
-        return templates.TemplateResponse(request, "index.html")
+    if settings.oauth2_enabled:
+
+        @application.get("/", response_class=HTMLResponse)
+        async def index_protected(request: Request, _user: dict[str, Any] = Depends(get_current_user)) -> HTMLResponse:
+            """Serve the chat frontend (authenticated)."""
+            return templates.TemplateResponse(request, "index.html", {"auth_enabled": True})
+
+    else:
+
+        @application.get("/", response_class=HTMLResponse)
+        async def index(request: Request) -> HTMLResponse:
+            """Serve the chat frontend."""
+            return templates.TemplateResponse(request, "index.html", {"auth_enabled": False})
 
     _register_channel_endpoints(application, bridge, settings)
-    application.include_router(create_file_upload_router(settings, db))
-    application.include_router(create_chat_router(db, bridge))
+    auth_dep = get_current_user if settings.oauth2_enabled else None
+    application.include_router(create_file_upload_router(settings, db, auth_dependency=auth_dep))
+    application.include_router(create_chat_router(db, bridge, auth_enabled=settings.oauth2_enabled))
 
     FastAPIInstrumentor.instrument_app(application)
 

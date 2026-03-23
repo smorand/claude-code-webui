@@ -43,7 +43,12 @@ async def _resolve_conversation(
     return conv.id
 
 
-def create_chat_router(db: Database, bridge: ChannelBridge) -> APIRouter:
+def create_chat_router(
+    db: Database,
+    bridge: ChannelBridge,
+    *,
+    auth_enabled: bool = False,
+) -> APIRouter:
     """Create the WebSocket chat router."""
     router = APIRouter()
 
@@ -55,6 +60,12 @@ def create_chat_router(db: Database, bridge: ChannelBridge) -> APIRouter:
         conversation management, file attachments, and delivers messages
         through the channel bridge to Claude.
         """
+        if auth_enabled:
+            session = websocket.session
+            if not session.get("authenticated"):
+                await websocket.close(code=4001)
+                return
+
         await websocket.accept()
         bridge.add_client(websocket)
         conversation_id: str | None = None

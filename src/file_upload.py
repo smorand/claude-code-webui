@@ -5,22 +5,29 @@ from __future__ import annotations
 import logging
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
 from tracing import trace_span
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from config import Settings
     from database import Database
 
 logger = logging.getLogger(__name__)
 
 
-def create_file_upload_router(settings: Settings, db: Database) -> APIRouter:
+def create_file_upload_router(
+    settings: Settings,
+    db: Database,
+    auth_dependency: Callable[..., Any] | None = None,
+) -> APIRouter:
     """Create the file upload API router."""
-    router = APIRouter(prefix="/api/files", tags=["files"])
+    dependencies = [Depends(auth_dependency)] if auth_dependency else []
+    router = APIRouter(prefix="/api/files", tags=["files"], dependencies=dependencies)
 
     def _validate_extension(filename: str) -> None:
         """Validate file extension against allowed list."""

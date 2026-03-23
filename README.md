@@ -24,6 +24,48 @@ Ensure `~/.local/bin` is in your `PATH`.
 
 ## Quick Start
 
+### Prerequisites (OAuth2 Authentication)
+
+To enable Google OAuth2 authentication:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) > APIs & Services > Credentials
+2. Create an OAuth 2.0 Client ID (Web application type)
+3. Add each allowed origin's `/auth/callback` as an authorized redirect URI (e.g. `http://localhost:8080/auth/callback`, `https://myhost.example.com:8080/auth/callback`)
+4. Create `~/.config/ccwebui/oauth2.yaml`:
+
+```yaml
+enabled: true
+client_id: "your_client_id"
+client_secret: "your_client_secret"
+session_secret_key: "a_random_secret_at_least_32_chars"
+allowed_origins:
+  - "http://localhost:8080"
+  - "https://myhost.example.com:8080"
+allowed_emails:
+  - "user1@example.com"
+  - "user2@example.com"
+
+# TLS (optional, required for HTTPS origins)
+ssl_certfile: ~/.config/ccwebui/tls/cert.pem
+ssl_keyfile: ~/.config/ccwebui/tls/key.pem
+```
+
+The redirect URI is computed dynamically from the incoming request's origin (scheme + host), validated against `allowed_origins`. Only the emails listed in `allowed_emails` can access the application. OAuth2 is disabled by default (when the YAML file is absent or `enabled: false`).
+
+To generate a self-signed TLS certificate:
+
+```bash
+mkdir -p ~/.config/ccwebui/tls
+openssl req -x509 -newkey rsa:2048 \
+  -keyout ~/.config/ccwebui/tls/key.pem \
+  -out ~/.config/ccwebui/tls/cert.pem \
+  -days 365 -nodes \
+  -subj "/CN=myhost.example.com" \
+  -addext "subjectAltName=DNS:myhost.example.com,DNS:localhost"
+```
+
+### Starting the Server
+
 ```bash
 # Install dependencies (development)
 make sync
@@ -82,12 +124,30 @@ make run ARGS='channel --port 9090'
 
 ## Features
 
-- **MCP Channel**: Sole communication channel with Claude Code via MCP protocol over stdio
-- **Chat Interface**: Real time conversational UI with WebSocket, Markdown rendering, and multi turn conversations
-- **File Upload**: Attach files to messages (drag and drop or file picker), with validation for size and file types
-- **File Attachments**: Claude can send files back to the browser via the reply tool
-- **Conversation History**: SQLite backed persistence across server restarts, with configurable history limits
-- **Message Editing**: Claude can edit previously sent messages
+### Communication
+- **MCP Channel**: Sole communication path with Claude Code via MCP protocol over stdio (no CLI subprocess fallback)
+- **Real time Chat**: WebSocket based conversational UI with Markdown rendering, code blocks, and multi turn conversations
+- **Conversation Persistence**: SQLite backed history across server restarts, with configurable context limits and auto generated titles
+
+### File Handling
+- **File Upload**: Multiple upload methods: click to browse, drag and drop onto drop zone, or drag and drop anywhere on the page
+- **Clipboard Paste**: Paste images directly from clipboard (auto saved as `screenshot_YYYYMMDDHHMMSS.png`)
+- **Upload Progress**: Visual progress bar with percentage during file upload
+- **File Validation**: Extension whitelist (90+ types) and size limit enforcement with error feedback
+- **File Attachments**: Claude can send files back to the browser as downloadable links via the reply tool
+
+### Authentication & Security
+- **Google OAuth2**: Optional authentication via GCP with login, callback, logout, and profile endpoints
+- **Email Whitelist**: Strict access control via `allowed_emails` list (required when OAuth2 is enabled)
+- **Dynamic Redirect URI**: OAuth2 callback URL computed from request origin, validated against `allowed_origins` (supports reverse proxies via X-Forwarded headers)
+- **TLS Support**: Optional HTTPS via `ssl_certfile`/`ssl_keyfile`, required for non localhost origins
+- **Unauthorized Page**: Styled 403 page with the denied email and a "Try another account" button to retrigger authentication
+- **Logout**: Header button (visible when auth is enabled) clears session and redirects to login
+
+### Observability
+- **Logging**: Rich console output with file based logs in `~/.cache/ccwebui/logs/`
+- **Tracing**: OpenTelemetry spans exported as JSONL, covering auth, database, channel, file upload, and WebSocket operations
+- **Message Editing**: Claude can edit previously sent assistant messages in real time
 
 ## Available Commands
 
@@ -124,8 +184,9 @@ Configuration is loaded from `~/.config/ccwebui/.env`, then overridden by enviro
 | `CCWEBUI_MAX_HISTORY_MESSAGES` | `100` | Max messages sent to Claude as context |
 | `CCWEBUI_DATABASE_PATH` | `~/.local/share/ccwebui/ccwebui.db` | SQLite database file path |
 | `CCWEBUI_LOG_DIR` | `~/.cache/ccwebui/logs` | Directory for log files |
-
 See also [Channel Configuration](#channel-configuration) above for channel specific settings.
+
+OAuth2 and TLS settings are configured via `~/.config/ccwebui/oauth2.yaml` (see [Prerequisites](#prerequisites-oauth2-authentication)). Environment variables with the `CCWEBUI_` prefix can override YAML values.
 
 ### File Locations
 
@@ -134,6 +195,8 @@ See also [Channel Configuration](#channel-configuration) above for channel speci
 | `~/.local/bin/claude-webui` | Launcher script |
 | `~/.local/bin/claude-code-webui` | Backend binary |
 | `~/.config/ccwebui/.env` | Configuration file |
+| `~/.config/ccwebui/oauth2.yaml` | OAuth2 and TLS configuration |
+| `~/.config/ccwebui/tls/` | TLS certificate and key |
 | `~/.local/share/ccwebui/ccwebui.db` | SQLite database |
 | `~/.cache/ccwebui/logs/` | Application and OTel logs |
 | `~/Downloads/` | Uploaded files |
@@ -148,8 +211,9 @@ claude-code-webui/
 ├── src/
 │   ├── claude_code_webui.py  # CLI entry point (Typer, serve + channel commands)
 │   ├── api.py                # FastAPI server with OTel, routes, lifespan
+│   ├── auth.py               # OAuth2 authentication (GCP, login, callback, session)
 │   ├── config.py             # Settings (pydantic-settings)
-│   ├── database.py           # SQLite database layer (aiosqlite)
+│   ├── database.py           # SQLite database layer (aiosqlite, users + conversations)
 │   ├── chat.py               # WebSocket chat handler (/ws/chat)
 │   ├── channel.py            # MCP channel server (stdio, tools, protocol)
 │   ├── channel_bridge.py     # Shared state bridge (MCP <-> FastAPI)
@@ -158,6 +222,7 @@ claude-code-webui/
 │   ├── tracing.py            # OpenTelemetry tracing (JSONL)
 │   └── templates/
 │       ├── index.html         # Chat frontend (htmx)
+│       ├── unauthorized.html  # OAuth2 access denied page
 │       └── partials/          # htmx partial templates
 ├── tests/                    # Unit tests
 │   └── functional/           # Integration tests
