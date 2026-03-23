@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-_GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+_GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"  # nosec B105
 _GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 _OAUTH2_SCOPES = "openid email profile"
 _HTTP_OK = 200
@@ -51,9 +51,7 @@ async def get_current_user(request: Request) -> dict[str, Any]:
     raise HTTPException(status_code=401, detail="Not authenticated")
 
 
-async def _exchange_code_for_token(
-    client: AsyncOAuth2Client, code: str
-) -> str:
+async def _exchange_code_for_token(client: AsyncOAuth2Client, code: str) -> str:
     """Exchange authorization code for access token. Raises HTTPException on failure."""
     try:
         token = await client.fetch_token(
