@@ -18,7 +18,7 @@ from api import create_app
 from config import Settings
 from database import Database
 
-_TEST_OAUTH2_SETTINGS = {
+_TEST_OAUTH2_SETTINGS: dict[str, object] = {
     "oauth2_enabled": True,
     "oauth2_client_id": "test_client_id",
     "oauth2_client_secret": "test_client_secret",

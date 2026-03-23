@@ -53,8 +53,26 @@ def test_settings_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.oauth2_client_id == "test_client_id"
 
 
-def test_oauth2_enabled_missing_fields_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_oauth2_enabled_missing_fields_raises() -> None:
     """E2E-NEW-011: Missing OAuth2 config with enabled=True fails at startup."""
-    monkeypatch.setenv("CCWEBUI_OAUTH2_ENABLED", "true")
     with pytest.raises(Exception, match="required settings are missing"):
-        Settings()
+        Settings(oauth2_enabled=True)
+
+
+def test_oauth2_loaded_from_yaml(tmp_path: pytest.TempPathFactory) -> None:
+    """OAuth2 settings loaded from YAML file."""
+    yaml_file = tmp_path / "oauth2.yaml"  # type: ignore[operator]
+    yaml_file.write_text(
+        "enabled: true\n"
+        "client_id: yaml_client\n"
+        "client_secret: yaml_secret\n"
+        "redirect_uri: http://localhost:8080/auth/callback\n"
+        "session_secret_key: yaml_session_key_long_enough_32ch\n"
+        "allowed_emails:\n"
+        "  - admin@test.com\n"
+    )
+    settings = Settings(oauth2_yaml_path=str(yaml_file))
+    assert settings.oauth2_enabled is True
+    assert settings.oauth2_client_id == "yaml_client"
+    assert settings.oauth2_client_secret == "yaml_secret"
+    assert settings.oauth2_allowed_emails == ["admin@test.com"]

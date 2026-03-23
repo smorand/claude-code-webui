@@ -30,19 +30,21 @@ To enable Google OAuth2 authentication:
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/) > APIs & Services > Credentials
 2. Create an OAuth 2.0 Client ID (Web application type)
-3. Set the authorized redirect URI to `http://localhost:8080/auth/callback`
-4. Copy the client ID and secret to your environment or `~/.config/ccwebui/.env`:
+3. Add `http://localhost:8080/auth/callback` as an authorized redirect URI
+4. Create `~/.config/ccwebui/oauth2.yaml`:
 
-```bash
-CCWEBUI_OAUTH2_ENABLED=true
-CCWEBUI_OAUTH2_CLIENT_ID=your_client_id
-CCWEBUI_OAUTH2_CLIENT_SECRET=your_client_secret
-CCWEBUI_OAUTH2_REDIRECT_URI=http://localhost:8080/auth/callback
-CCWEBUI_SESSION_SECRET_KEY=a_random_secret_at_least_32_chars
-CCWEBUI_OAUTH2_ALLOWED_EMAILS=user1@example.com,user2@example.com
+```yaml
+enabled: true
+client_id: "your_client_id"
+client_secret: "your_client_secret"
+redirect_uri: "http://localhost:8080/auth/callback"
+session_secret_key: "a_random_secret_at_least_32_chars"
+allowed_emails:
+  - "user1@example.com"
+  - "user2@example.com"
 ```
 
-OAuth2 is disabled by default. When disabled, all endpoints are publicly accessible.
+Only the emails listed in `allowed_emails` can access the application. OAuth2 is disabled by default (when the YAML file is absent or `enabled: false`).
 
 ### Starting the Server
 

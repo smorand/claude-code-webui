@@ -1,13 +1,21 @@
 """Application settings using pydantic-settings."""
 
-from pathlib import Path
+from __future__ import annotations
 
+import logging
+from pathlib import Path
+from typing import Any
+
+import yaml
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 _CONFIG_DIR = Path.home() / ".config" / "ccwebui"
 _DATA_DIR = Path.home() / ".local" / "share" / "ccwebui"
 _CACHE_DIR = Path.home() / ".cache" / "ccwebui"
+_OAUTH2_YAML = _CONFIG_DIR / "oauth2.yaml"
 
 
 class Settings(BaseSettings):
@@ -93,6 +101,7 @@ class Settings(BaseSettings):
     oauth2_redirect_uri: str = ""
     oauth2_allowed_emails: list[str] = []
     session_secret_key: str = ""
+    oauth2_yaml_path: str = str(_OAUTH2_YAML)
 
     channel_name: str = "webui"
     channel_state_dir: Path = Path.home() / ".claude" / "channels" / "webui"
@@ -100,24 +109,52 @@ class Settings(BaseSettings):
     channel_outbox_dir: Path | None = None
     channel_max_file_size: int = 52_428_800
 
+    @model_validator(mode="before")
+    @classmethod
+    def _load_oauth2_yaml(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """Load OAuth2 settings from YAML file, env vars take precedence."""
+        yaml_path = Path(values.get("oauth2_yaml_path", str(_OAUTH2_YAML)))
+        if not yaml_path.exists():
+            return values
+
+        with yaml_path.open() as f:
+            data = yaml.safe_load(f)
+        if not isinstance(data, dict):
+            return values
+
+        field_map = {  # nosec B105
+            "enabled": "oauth2_enabled",
+            "client_id": "oauth2_client_id",
+            "client_secret": "oauth2_client_secret",
+            "redirect_uri": "oauth2_redirect_uri",
+            "allowed_emails": "oauth2_allowed_emails",
+            "session_secret_key": "session_secret_key",
+        }
+        for yaml_key, settings_key in field_map.items():
+            if yaml_key in data and not values.get(settings_key):
+                values[settings_key] = data[yaml_key]
+
+        return values
+
     @model_validator(mode="after")
-    def _validate_oauth2(self) -> "Settings":
+    def _validate_oauth2(self) -> Settings:
         """Validate that required OAuth2 fields are set when oauth2_enabled is True."""
         if not self.oauth2_enabled:
             return self
         missing = []
         if not self.oauth2_client_id:
-            missing.append("CCWEBUI_OAUTH2_CLIENT_ID")
+            missing.append("client_id")
         if not self.oauth2_client_secret:
-            missing.append("CCWEBUI_OAUTH2_CLIENT_SECRET")
+            missing.append("client_secret")
         if not self.oauth2_redirect_uri:
-            missing.append("CCWEBUI_OAUTH2_REDIRECT_URI")
+            missing.append("redirect_uri")
         if not self.session_secret_key:
-            missing.append("CCWEBUI_SESSION_SECRET_KEY")
+            missing.append("session_secret_key")
         if not self.oauth2_allowed_emails:
-            missing.append("CCWEBUI_OAUTH2_ALLOWED_EMAILS")
+            missing.append("allowed_emails")
         if missing:
-            msg = f"OAuth2 is enabled but required settings are missing: {', '.join(missing)}"
+            yaml_path = self.oauth2_yaml_path
+            msg = f"OAuth2 is enabled but required settings are missing: {', '.join(missing)}. Configure them in {yaml_path}"
             raise ValueError(msg)
         return self
 
