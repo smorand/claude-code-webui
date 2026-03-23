@@ -155,7 +155,7 @@ install:
 	@mkdir -p ~/.local/bin
 	@mkdir -p ~/.config/ccwebui
 	@mkdir -p ~/.local/share/ccwebui
-	@uv tool install . --force
+	@uv tool install . --reinstall
 	@ln -sf $$(uv tool dir)/$(PROJECT_NAME)/bin/$(PROJECT_NAME) ~/.local/bin/$(PROJECT_NAME)
 	@cp bin/claude-webui ~/.local/bin/claude-webui
 	@chmod +x ~/.local/bin/claude-webui
