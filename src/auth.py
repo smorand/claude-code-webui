@@ -4,15 +4,19 @@ from __future__ import annotations
 
 import logging
 import secrets
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import httpx
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.templating import Jinja2Templates
 from starlette.requests import Request  # noqa: TC002
 
 from tracing import trace_span
+
+_templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 if TYPE_CHECKING:
     from config import Settings
@@ -82,13 +86,11 @@ async def _fetch_google_userinfo(access_token: str) -> dict[str, Any]:
     return result
 
 
-def _validate_allowed_email(email: str, allowed_emails: list[str]) -> None:
-    """Validate that the email is in the allowed list."""
+def _is_email_allowed(email: str, allowed_emails: list[str]) -> bool:
+    """Check whether the email is in the allowed list."""
     if not allowed_emails:
-        return
-    if email not in allowed_emails:
-        logger.warning("Email not in allowed list: %s", email)
-        raise HTTPException(status_code=403, detail="Email is not authorized")
+        return True
+    return email in allowed_emails
 
 
 def create_auth_router(settings: Settings, db: Database) -> APIRouter:
@@ -134,7 +136,14 @@ def create_auth_router(settings: Settings, db: Database) -> APIRouter:
             name = userinfo.get("name", "")
             picture = userinfo.get("picture")
 
-            _validate_allowed_email(email, settings.oauth2_allowed_emails)
+            if not _is_email_allowed(email, settings.oauth2_allowed_emails):
+                logger.warning("Email not in allowed list: %s", email)
+                return _templates.TemplateResponse(
+                    request,
+                    "unauthorized.html",
+                    {"email": email},
+                    status_code=403,
+                )
             await db.upsert_user(email=email, name=name, picture=picture)
 
             request.session["user_email"] = email

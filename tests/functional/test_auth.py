@@ -302,7 +302,8 @@ async def test_callback_disallowed_email(tmp_path: Path, monkeypatch: pytest.Mon
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await _do_full_oauth_flow(client, settings, email="unauthorized@company.com")
     assert response.status_code == 403
-    assert "not authorized" in response.json()["detail"].lower()
+    assert "Access Denied" in response.text
+    assert "unauthorized@company.com" in response.text
 
 
 # --- E2E-NEW-008: Logout clears session ---
