@@ -28,7 +28,25 @@ _GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 _GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"  # nosec B105
 _GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 _OAUTH2_SCOPES = "openid email profile"
+_CALLBACK_PATH = "/auth/callback"
 _HTTP_OK = 200
+
+
+def _resolve_redirect_uri(request: Request, allowed_origins: list[str]) -> str:
+    """Build the OAuth2 redirect URI from the incoming request origin.
+
+    Validates that the request origin is in the allowed list.
+    Raises HTTPException 403 if the origin is not allowed.
+    """
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("x-forwarded-host", request.url.netloc)
+    origin = f"{scheme}://{host}"
+
+    if origin not in allowed_origins:
+        logger.warning("Origin not in allowed list: %s", origin)
+        raise HTTPException(status_code=403, detail=f"Origin not allowed: {origin}")
+
+    return f"{origin}{_CALLBACK_PATH}"
 
 
 async def get_current_user(request: Request) -> dict[str, Any]:
@@ -97,11 +115,11 @@ def create_auth_router(settings: Settings, db: Database) -> APIRouter:
     """Create the OAuth2 authentication router."""
     router = APIRouter(prefix="/auth", tags=["auth"])
 
-    def _build_oauth_client() -> AsyncOAuth2Client:
+    def _build_oauth_client(redirect_uri: str) -> AsyncOAuth2Client:
         return AsyncOAuth2Client(
             client_id=settings.oauth2_client_id,
             client_secret=settings.oauth2_client_secret,
-            redirect_uri=settings.oauth2_redirect_uri,
+            redirect_uri=redirect_uri,
             scope=_OAUTH2_SCOPES,
         )
 
@@ -109,10 +127,12 @@ def create_auth_router(settings: Settings, db: Database) -> APIRouter:
     async def login(request: Request) -> RedirectResponse:
         """Redirect to Google OAuth2 consent screen."""
         with trace_span("auth.login"):
+            redirect_uri = _resolve_redirect_uri(request, settings.oauth2_allowed_origins)
             state = secrets.token_urlsafe(32)
             request.session["oauth2_state"] = state
+            request.session["oauth2_redirect_uri"] = redirect_uri
 
-            client = _build_oauth_client()
+            client = _build_oauth_client(redirect_uri)
             uri, _ = client.create_authorization_url(
                 _GOOGLE_AUTH_URL,
                 state=state,
@@ -128,7 +148,8 @@ def create_auth_router(settings: Settings, db: Database) -> APIRouter:
                 logger.warning("OAuth2 state mismatch")
                 raise HTTPException(status_code=403, detail="Invalid state parameter")
 
-            client = _build_oauth_client()
+            redirect_uri = request.session.get("oauth2_redirect_uri", "")
+            client = _build_oauth_client(redirect_uri)
             access_token = await _exchange_code_for_token(client, code)
             userinfo = await _fetch_google_userinfo(access_token)
 

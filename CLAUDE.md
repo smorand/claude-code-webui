@@ -20,7 +20,8 @@ make check              # Full quality gate (lint, format, typecheck, security, 
 
 - Launcher: `~/.local/bin/claude-webui` (from `bin/claude-webui`)
 - Backend: `~/.local/bin/claude-code-webui`
-- Config: `~/.config/ccwebui/.env`
+- Config: `~/.config/ccwebui/.env` and `~/.config/ccwebui/oauth2.yaml`
+- TLS: `~/.config/ccwebui/tls/`
 - Database: `~/.local/share/ccwebui/ccwebui.db`
 - Logs: `~/.cache/ccwebui/logs/`
 - Uploads: `~/Downloads/`
@@ -59,6 +60,8 @@ make check              # Full quality gate (lint, format, typecheck, security, 
 - Frontend uses htmx templates in `src/templates/`. No inline SQL outside `database.py`
 - Auth dependency `get_current_user` must be applied to all protected routes when OAuth2 is enabled
 - OAuth2 is toggled via `oauth2_enabled` setting (default: False); when disabled, no auth middleware is applied
+- OAuth2 redirect URI is computed dynamically from request origin, validated against `oauth2_allowed_origins`
+- TLS is configured via `ssl_certfile`/`ssl_keyfile` in oauth2.yaml; required for HTTPS origins
 - htmx requests use `HX-Redirect` header for auth redirects (not 302)
 
 ## Process

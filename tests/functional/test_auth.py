@@ -22,7 +22,7 @@ _TEST_OAUTH2_SETTINGS: dict[str, object] = {
     "oauth2_enabled": True,
     "oauth2_client_id": "test_client_id",
     "oauth2_client_secret": "test_client_secret",
-    "oauth2_redirect_uri": "http://localhost:8080/auth/callback",
+    "oauth2_allowed_origins": ["http://test"],
     "session_secret_key": "test_session_secret_key_for_tests_32!",
     "oauth2_allowed_emails": ["user@example.com", "test@test.com"],
 }
@@ -289,7 +289,7 @@ async def test_callback_disallowed_email(tmp_path: Path, monkeypatch: pytest.Mon
         oauth2_enabled=True,
         oauth2_client_id="test_client_id",
         oauth2_client_secret="test_client_secret",
-        oauth2_redirect_uri="http://localhost:8080/auth/callback",
+        oauth2_allowed_origins=["http://test"],
         session_secret_key="test_session_secret_key_for_tests_32!",
         oauth2_allowed_emails=["admin@company.com"],
     )

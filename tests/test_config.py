@@ -38,7 +38,7 @@ def test_settings_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CCWEBUI_OAUTH2_ENABLED", "true")
     monkeypatch.setenv("CCWEBUI_OAUTH2_CLIENT_ID", "test_client_id")
     monkeypatch.setenv("CCWEBUI_OAUTH2_CLIENT_SECRET", "test_secret")
-    monkeypatch.setenv("CCWEBUI_OAUTH2_REDIRECT_URI", "http://localhost:8080/auth/callback")
+    monkeypatch.setenv("CCWEBUI_OAUTH2_ALLOWED_ORIGINS", '["http://localhost:8080"]')
     monkeypatch.setenv("CCWEBUI_SESSION_SECRET_KEY", "test_session_secret_key_32chars!")
     monkeypatch.setenv("CCWEBUI_OAUTH2_ALLOWED_EMAILS", '["admin@test.com"]')
     settings = Settings()
@@ -66,7 +66,8 @@ def test_oauth2_loaded_from_yaml(tmp_path: pytest.TempPathFactory) -> None:
         "enabled: true\n"
         "client_id: yaml_client\n"
         "client_secret: yaml_secret\n"
-        "redirect_uri: http://localhost:8080/auth/callback\n"
+        "allowed_origins:\n"
+        "  - http://localhost:8080\n"
         "session_secret_key: yaml_session_key_long_enough_32ch\n"
         "allowed_emails:\n"
         "  - admin@test.com\n"

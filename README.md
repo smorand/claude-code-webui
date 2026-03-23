@@ -30,21 +30,39 @@ To enable Google OAuth2 authentication:
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/) > APIs & Services > Credentials
 2. Create an OAuth 2.0 Client ID (Web application type)
-3. Add `http://localhost:8080/auth/callback` as an authorized redirect URI
+3. Add each allowed origin's `/auth/callback` as an authorized redirect URI (e.g. `http://localhost:8080/auth/callback`, `https://myhost.example.com:8080/auth/callback`)
 4. Create `~/.config/ccwebui/oauth2.yaml`:
 
 ```yaml
 enabled: true
 client_id: "your_client_id"
 client_secret: "your_client_secret"
-redirect_uri: "http://localhost:8080/auth/callback"
 session_secret_key: "a_random_secret_at_least_32_chars"
+allowed_origins:
+  - "http://localhost:8080"
+  - "https://myhost.example.com:8080"
 allowed_emails:
   - "user1@example.com"
   - "user2@example.com"
+
+# TLS (optional, required for HTTPS origins)
+ssl_certfile: ~/.config/ccwebui/tls/cert.pem
+ssl_keyfile: ~/.config/ccwebui/tls/key.pem
 ```
 
-Only the emails listed in `allowed_emails` can access the application. OAuth2 is disabled by default (when the YAML file is absent or `enabled: false`).
+The redirect URI is computed dynamically from the incoming request's origin (scheme + host), validated against `allowed_origins`. Only the emails listed in `allowed_emails` can access the application. OAuth2 is disabled by default (when the YAML file is absent or `enabled: false`).
+
+To generate a self-signed TLS certificate:
+
+```bash
+mkdir -p ~/.config/ccwebui/tls
+openssl req -x509 -newkey rsa:2048 \
+  -keyout ~/.config/ccwebui/tls/key.pem \
+  -out ~/.config/ccwebui/tls/cert.pem \
+  -days 365 -nodes \
+  -subj "/CN=myhost.example.com" \
+  -addext "subjectAltName=DNS:myhost.example.com,DNS:localhost"
+```
 
 ### Starting the Server
 
@@ -150,7 +168,7 @@ Configuration is loaded from `~/.config/ccwebui/.env`, then overridden by enviro
 | `CCWEBUI_LOG_DIR` | `~/.cache/ccwebui/logs` | Directory for log files |
 See also [Channel Configuration](#channel-configuration) above for channel specific settings.
 
-OAuth2 settings are configured via `~/.config/ccwebui/oauth2.yaml` (see [Prerequisites](#prerequisites-oauth2-authentication)). Environment variables with the `CCWEBUI_OAUTH2_` prefix can override YAML values.
+OAuth2 and TLS settings are configured via `~/.config/ccwebui/oauth2.yaml` (see [Prerequisites](#prerequisites-oauth2-authentication)). Environment variables with the `CCWEBUI_` prefix can override YAML values.
 
 ### File Locations
 
@@ -159,6 +177,8 @@ OAuth2 settings are configured via `~/.config/ccwebui/oauth2.yaml` (see [Prerequ
 | `~/.local/bin/claude-webui` | Launcher script |
 | `~/.local/bin/claude-code-webui` | Backend binary |
 | `~/.config/ccwebui/.env` | Configuration file |
+| `~/.config/ccwebui/oauth2.yaml` | OAuth2 and TLS configuration |
+| `~/.config/ccwebui/tls/` | TLS certificate and key |
 | `~/.local/share/ccwebui/ccwebui.db` | SQLite database |
 | `~/.cache/ccwebui/logs/` | Application and OTel logs |
 | `~/Downloads/` | Uploaded files |

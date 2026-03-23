@@ -98,10 +98,13 @@ class Settings(BaseSettings):
     oauth2_enabled: bool = False
     oauth2_client_id: str = ""
     oauth2_client_secret: str = ""
-    oauth2_redirect_uri: str = ""
+    oauth2_allowed_origins: list[str] = []
     oauth2_allowed_emails: list[str] = []
     session_secret_key: str = ""
     oauth2_yaml_path: str = str(_OAUTH2_YAML)
+
+    ssl_certfile: str = ""
+    ssl_keyfile: str = ""
 
     channel_name: str = "webui"
     channel_state_dir: Path = Path.home() / ".claude" / "channels" / "webui"
@@ -126,13 +129,19 @@ class Settings(BaseSettings):
             "enabled": "oauth2_enabled",
             "client_id": "oauth2_client_id",
             "client_secret": "oauth2_client_secret",
-            "redirect_uri": "oauth2_redirect_uri",
+            "allowed_origins": "oauth2_allowed_origins",
             "allowed_emails": "oauth2_allowed_emails",
             "session_secret_key": "session_secret_key",
+            "ssl_certfile": "ssl_certfile",
+            "ssl_keyfile": "ssl_keyfile",
         }
+        _path_fields = {"ssl_certfile", "ssl_keyfile"}
         for yaml_key, settings_key in field_map.items():
             if yaml_key in data and not values.get(settings_key):
-                values[settings_key] = data[yaml_key]
+                val = data[yaml_key]
+                if settings_key in _path_fields and isinstance(val, str):
+                    val = str(Path(val).expanduser())
+                values[settings_key] = val
 
         return values
 
@@ -146,8 +155,8 @@ class Settings(BaseSettings):
             missing.append("client_id")
         if not self.oauth2_client_secret:
             missing.append("client_secret")
-        if not self.oauth2_redirect_uri:
-            missing.append("redirect_uri")
+        if not self.oauth2_allowed_origins:
+            missing.append("allowed_origins")
         if not self.session_secret_key:
             missing.append("session_secret_key")
         if not self.oauth2_allowed_emails:

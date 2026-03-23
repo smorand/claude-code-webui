@@ -42,8 +42,18 @@ def serve(
     reload: Annotated[bool, typer.Option("--reload", help="Enable auto reload")] = False,
 ) -> None:
     """Start the web UI server."""
+    settings = Settings()
+    ssl_certfile = settings.ssl_certfile or None
+    ssl_keyfile = settings.ssl_keyfile or None
     logger.info("Starting Claude Code Web UI on %s:%s", host, port)
-    uvicorn.run("api:app", host=host, port=port, reload=reload)
+    uvicorn.run(
+        "api:app",
+        host=host,
+        port=port,
+        reload=reload,
+        ssl_certfile=ssl_certfile,
+        ssl_keyfile=ssl_keyfile,
+    )
 
 
 @app.command()
@@ -86,6 +96,8 @@ def _run_channel(port: int) -> None:
         host=settings.host,
         port=settings.port,
         log_level="info",
+        ssl_certfile=settings.ssl_certfile or None,
+        ssl_keyfile=settings.ssl_keyfile or None,
     )
     http_server = uvicorn.Server(config)
 
