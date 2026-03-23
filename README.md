@@ -24,6 +24,28 @@ Ensure `~/.local/bin` is in your `PATH`.
 
 ## Quick Start
 
+### Prerequisites (OAuth2 Authentication)
+
+To enable Google OAuth2 authentication:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) > APIs & Services > Credentials
+2. Create an OAuth 2.0 Client ID (Web application type)
+3. Set the authorized redirect URI to `http://localhost:8080/auth/callback`
+4. Copy the client ID and secret to your environment or `~/.config/ccwebui/.env`:
+
+```bash
+CCWEBUI_OAUTH2_ENABLED=true
+CCWEBUI_OAUTH2_CLIENT_ID=your_client_id
+CCWEBUI_OAUTH2_CLIENT_SECRET=your_client_secret
+CCWEBUI_OAUTH2_REDIRECT_URI=http://localhost:8080/auth/callback
+CCWEBUI_SESSION_SECRET_KEY=a_random_secret_at_least_32_chars
+CCWEBUI_OAUTH2_ALLOWED_DOMAINS=yourdomain.com
+```
+
+OAuth2 is disabled by default. When disabled, all endpoints are publicly accessible.
+
+### Starting the Server
+
 ```bash
 # Install dependencies (development)
 make sync
@@ -124,6 +146,12 @@ Configuration is loaded from `~/.config/ccwebui/.env`, then overridden by enviro
 | `CCWEBUI_MAX_HISTORY_MESSAGES` | `100` | Max messages sent to Claude as context |
 | `CCWEBUI_DATABASE_PATH` | `~/.local/share/ccwebui/ccwebui.db` | SQLite database file path |
 | `CCWEBUI_LOG_DIR` | `~/.cache/ccwebui/logs` | Directory for log files |
+| `CCWEBUI_OAUTH2_ENABLED` | `false` | Enable OAuth2 authentication |
+| `CCWEBUI_OAUTH2_CLIENT_ID` | (required if enabled) | Google OAuth2 client ID |
+| `CCWEBUI_OAUTH2_CLIENT_SECRET` | (required if enabled) | Google OAuth2 client secret |
+| `CCWEBUI_OAUTH2_REDIRECT_URI` | (required if enabled) | OAuth2 callback URL |
+| `CCWEBUI_OAUTH2_ALLOWED_DOMAINS` | (empty = all allowed) | Comma separated list of allowed email domains |
+| `CCWEBUI_SESSION_SECRET_KEY` | (required if enabled) | Secret for signing session cookies |
 
 See also [Channel Configuration](#channel-configuration) above for channel specific settings.
 
@@ -148,8 +176,9 @@ claude-code-webui/
 ├── src/
 │   ├── claude_code_webui.py  # CLI entry point (Typer, serve + channel commands)
 │   ├── api.py                # FastAPI server with OTel, routes, lifespan
+│   ├── auth.py               # OAuth2 authentication (GCP, login, callback, session)
 │   ├── config.py             # Settings (pydantic-settings)
-│   ├── database.py           # SQLite database layer (aiosqlite)
+│   ├── database.py           # SQLite database layer (aiosqlite, users + conversations)
 │   ├── chat.py               # WebSocket chat handler (/ws/chat)
 │   ├── channel.py            # MCP channel server (stdio, tools, protocol)
 │   ├── channel_bridge.py     # Shared state bridge (MCP <-> FastAPI)
