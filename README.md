@@ -39,7 +39,7 @@ CCWEBUI_OAUTH2_CLIENT_ID=your_client_id
 CCWEBUI_OAUTH2_CLIENT_SECRET=your_client_secret
 CCWEBUI_OAUTH2_REDIRECT_URI=http://localhost:8080/auth/callback
 CCWEBUI_SESSION_SECRET_KEY=a_random_secret_at_least_32_chars
-CCWEBUI_OAUTH2_ALLOWED_DOMAINS=yourdomain.com
+CCWEBUI_OAUTH2_ALLOWED_EMAILS=user1@example.com,user2@example.com
 ```
 
 OAuth2 is disabled by default. When disabled, all endpoints are publicly accessible.
@@ -150,7 +150,7 @@ Configuration is loaded from `~/.config/ccwebui/.env`, then overridden by enviro
 | `CCWEBUI_OAUTH2_CLIENT_ID` | (required if enabled) | Google OAuth2 client ID |
 | `CCWEBUI_OAUTH2_CLIENT_SECRET` | (required if enabled) | Google OAuth2 client secret |
 | `CCWEBUI_OAUTH2_REDIRECT_URI` | (required if enabled) | OAuth2 callback URL |
-| `CCWEBUI_OAUTH2_ALLOWED_DOMAINS` | (empty = all allowed) | Comma separated list of allowed email domains |
+| `CCWEBUI_OAUTH2_ALLOWED_EMAILS` | (required if enabled) | Comma separated list of allowed email addresses |
 | `CCWEBUI_SESSION_SECRET_KEY` | (required if enabled) | Secret for signing session cookies |
 
 See also [Channel Configuration](#channel-configuration) above for channel specific settings.

@@ -24,6 +24,7 @@ _TEST_OAUTH2_SETTINGS = {
     "oauth2_client_secret": "test_client_secret",
     "oauth2_redirect_uri": "http://localhost:8080/auth/callback",
     "session_secret_key": "test_session_secret_key_for_tests_32!",
+    "oauth2_allowed_emails": ["user@example.com", "test@test.com"],
 }
 
 
@@ -274,14 +275,14 @@ async def test_user_updated_on_subsequent_login(auth_client: AsyncClient, auth_s
     assert user2.last_login_at >= user1.last_login_at
 
 
-# --- E2E-NEW-004: Callback with disallowed domain returns 403 ---
+# --- E2E-NEW-004: Callback with disallowed email returns 403 ---
 
 
-async def test_callback_disallowed_domain(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """E2E-NEW-004: Callback with disallowed domain returns 403."""
+async def test_callback_disallowed_email(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """E2E-NEW-004: Callback with email not in allowed list returns 403."""
     monkeypatch.chdir(tmp_path)
     settings = Settings(
-        app_name="test_domain",
+        app_name="test_email_filter",
         debug=True,
         upload_dir=str(tmp_path / "uploads"),
         database_path=str(tmp_path / "test.db"),
@@ -290,7 +291,7 @@ async def test_callback_disallowed_domain(tmp_path: Path, monkeypatch: pytest.Mo
         oauth2_client_secret="test_client_secret",
         oauth2_redirect_uri="http://localhost:8080/auth/callback",
         session_secret_key="test_session_secret_key_for_tests_32!",
-        oauth2_allowed_domains=["company.com"],
+        oauth2_allowed_emails=["admin@company.com"],
     )
     db = Database(db_path=settings.database_path)
     await db.init_schema()
@@ -299,9 +300,9 @@ async def test_callback_disallowed_domain(tmp_path: Path, monkeypatch: pytest.Mo
     application = create_app(settings=settings)
     transport = ASGITransport(app=application)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await _do_full_oauth_flow(client, settings, email="user@other.com")
+        response = await _do_full_oauth_flow(client, settings, email="unauthorized@company.com")
     assert response.status_code == 403
-    assert "domain" in response.json()["detail"].lower()
+    assert "not authorized" in response.json()["detail"].lower()
 
 
 # --- E2E-NEW-008: Logout clears session ---

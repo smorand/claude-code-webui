@@ -91,7 +91,7 @@ class Settings(BaseSettings):
     oauth2_client_id: str = ""
     oauth2_client_secret: str = ""
     oauth2_redirect_uri: str = ""
-    oauth2_allowed_domains: list[str] = []
+    oauth2_allowed_emails: list[str] = []
     session_secret_key: str = ""
 
     channel_name: str = "webui"
@@ -114,6 +114,8 @@ class Settings(BaseSettings):
             missing.append("CCWEBUI_OAUTH2_REDIRECT_URI")
         if not self.session_secret_key:
             missing.append("CCWEBUI_SESSION_SECRET_KEY")
+        if not self.oauth2_allowed_emails:
+            missing.append("CCWEBUI_OAUTH2_ALLOWED_EMAILS")
         if missing:
             msg = f"OAuth2 is enabled but required settings are missing: {', '.join(missing)}"
             raise ValueError(msg)

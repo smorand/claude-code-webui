@@ -40,6 +40,7 @@ def test_settings_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CCWEBUI_OAUTH2_CLIENT_SECRET", "test_secret")
     monkeypatch.setenv("CCWEBUI_OAUTH2_REDIRECT_URI", "http://localhost:8080/auth/callback")
     monkeypatch.setenv("CCWEBUI_SESSION_SECRET_KEY", "test_session_secret_key_32chars!")
+    monkeypatch.setenv("CCWEBUI_OAUTH2_ALLOWED_EMAILS", '["admin@test.com"]')
     settings = Settings()
     assert settings.app_name == "test_app"
     assert settings.debug is True

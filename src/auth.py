@@ -82,14 +82,13 @@ async def _fetch_google_userinfo(access_token: str) -> dict[str, Any]:
     return result
 
 
-def _validate_email_domain(email: str, allowed_domains: list[str]) -> None:
-    """Validate that the email domain is in the allowed list."""
-    if not allowed_domains:
+def _validate_allowed_email(email: str, allowed_emails: list[str]) -> None:
+    """Validate that the email is in the allowed list."""
+    if not allowed_emails:
         return
-    domain = email.rsplit("@", maxsplit=1)[-1] if "@" in email else ""
-    if domain not in allowed_domains:
-        logger.warning("Domain not allowed: %s", domain)
-        raise HTTPException(status_code=403, detail=f"Email domain '{domain}' is not authorized")
+    if email not in allowed_emails:
+        logger.warning("Email not in allowed list: %s", email)
+        raise HTTPException(status_code=403, detail="Email is not authorized")
 
 
 def create_auth_router(settings: Settings, db: Database) -> APIRouter:
@@ -135,7 +134,7 @@ def create_auth_router(settings: Settings, db: Database) -> APIRouter:
             name = userinfo.get("name", "")
             picture = userinfo.get("picture")
 
-            _validate_email_domain(email, settings.oauth2_allowed_domains)
+            _validate_allowed_email(email, settings.oauth2_allowed_emails)
             await db.upsert_user(email=email, name=name, picture=picture)
 
             request.session["user_email"] = email
